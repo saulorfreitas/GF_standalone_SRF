@@ -104,10 +104,10 @@ module modConvParGF
       ,nmp, lsmp, cnmp,moist_trigger,frac_modis,max_tq_tend              &
       ,cum_fadj_massflx, cum_use_excess, cum_ave_layer, adv_trigger      &
       ,use_smooth_prof, output_sound,use_cloud_dissipation               &
-      ,use_smooth_tend,beta_sh,c0_shal                   &
+      ,use_smooth_tend,beta_sh,c0_shal                                   &
       ,use_linear_subcl_mf,cap_maxs,liq_ice_number_conc                  &
       ,sig_factor,lcl_trigger, rh_dicycle, add_coldpool_prop             &
-      ,add_coldpool_clos,mx_buoy1, mx_buoy2, cum_t_star                  &
+      ,add_coldpool_clos,add_coldpool_trig,mx_buoy1, mx_buoy2, cum_t_star&
       ,add_coldpool_diff,n_cldrop,use_gustiness, use_random_num          &
       ,dcape_threshold,modConvParGF_initialized
 
@@ -168,8 +168,10 @@ module modConvParGF
 
    integer :: add_coldpool_prop != -1,0,1,2,3 add coldpool propagation
 
-   integer :: add_coldpool_clos ! add the kinetic energy at leading of the gust front
+   integer :: add_coldpool_clos ! add the the mass flux associated to the W @ leading of the gust front
    
+   integer :: add_coldpool_trig ! add triggering criteria based on cold pool presence
+
    integer :: add_coldpool_diff ! add vert/horizontal diffusion to the cold pool propaga
 
    integer :: use_scale_dep     != 0/1:  scale dependence flag, default = 1
@@ -1865,7 +1867,7 @@ contains
              wlpool_bcon  (:) = wlpool(:)
              ke_gustfront (:) = 0.5 * max(wlpool_bcon(:)**2,  zws(:)**2) + 1.e-6
             
-            if( add_coldpool_clos == 2 .and. cumulus == 'deep')then
+            if( add_coldpool_trig == 2 .and. cumulus == 'deep')then
                call cup_up_aa0(cin1,zo_cup,zuo,dbyo ,GAMMAo_CUP   ,tn_cup  ,k22,klcl,kbcon,ktop &
                               ,ierr,itf,ktf,its,ite, kts,kte,'CIN')
                do vtp_index = get_num_elements(vec_ok),1,-1
@@ -2146,7 +2148,7 @@ contains
             call cup_forcing_ens_deep(itf,ktf,its,ite, kts,kte,ens4,ensdim,ichoice,maxens,maxens2,maxens3 &
                                      ,ierr,k22,kbcon,ktop,xland1,aa0,aa1,xaa0,mbdt,dtime,xf_ens,mconv,qo  &
                                      ,po_cup,omeg,zdo,zuo,pr_ens,edto,tau_ecmwf,aa1_bl,xf_dicycle, xk_x   &
-                                     ,alpha_adv,Q_adv,aa1_radpbl,aa1_adv,wlpool_bcon,xf_coldpool)
+                                     ,alpha_adv,Q_adv,aa1_radpbl,aa1_adv,wlpool_bcon,xf_coldpool,sig)
 
       if(cumulus == 'mid') &
             call cup_forcing_ens_mid(aa0,aa1,xaa0,mbdt,dtime,ierr ,po_cup,ktop,k22,kbcon,kpbl,ichoice    &
@@ -4704,7 +4706,7 @@ contains
                                   ,maxens2,maxens3,ierr,k22,kbcon,ktop,xland,aa0,aa1,xaa0      &
                                   ,mbdt,dtime,xf_ens,mconv,qo,p_cup,omeg,zd,zu,pr_ens,edt      &
                                   ,tau_ecmwf,aa1_bl,xf_dicycle,xk_x,alpha_adv,Q_adv,aa1_radpbl &
-                                  ,aa1_adv,wlpool,xf_coldpool)
+                                  ,aa1_adv,wlpool,xf_coldpool,sig)
 
       implicit none
       integer  ,intent (in   ) :: itf,ktf,its,ite, kts,kte,ens4
@@ -4736,6 +4738,7 @@ contains
       real,    dimension (:,:)    ,intent (in   )  :: zd,zu,p_cup,qo
       real,    dimension (:,:,:)  ,intent (in   )  :: omeg
       real,    dimension (:)      ,intent (in   )  :: xaa0
+      real,    dimension (:)      ,intent (in   )  :: sig
       real,    dimension (:)      ,intent (in   )  :: aa1,edt,xland
       real,    dimension (:)      ,intent (inout)  :: mconv
       real,    dimension (:)      ,intent (in   )  :: aa0
@@ -4757,9 +4760,11 @@ contains
       real,    dimension (its:ite)        :: xk
       integer                             :: i,k,nall,n,ne,nens,nens3,vtp_index
       real                                :: a1,a_ave,xff0,xomg
-      real                                :: betajb,ke
+      real                                :: betajb,ke,fractional_area
       integer                             :: kk
       real, dimension (its:ite)           :: ens_adj
+      real, parameter                     :: air_dens = 1.1 ! estimation of air density at 
+                                                            ! cold pool leading edge 
       !
       ens_adj(:)=1.
       xf_ens(:,1:16)= 0.
@@ -4896,7 +4901,7 @@ contains
          do vtp_index = get_num_elements(vec_ok),1,-1
             i = get_data_value(vec_ok,vtp_index)
          
-!           if(p_cup(kbcon(i),i)< 950. )cycle
+            !if(p_cup(kbcon(i),i)< 950. )cycle
 
             !--- Bechtold et al (2014)
             xff_dicycle  = (aa1(i)-aa1_bl(i))
@@ -4907,23 +4912,25 @@ contains
 
             xff_dicycle  = xff_dicycle /tau_ecmwf(i)
 
-            if(xk(i).lt.0) xf_dicycle(i)= max(0.,-xff_dicycle/xk(i))
-            xf_dicycle(i)= xf_ens(i,10)-xf_dicycle(i)
+            if(xk(i) < 0.) xf_dicycle(i)= max(0.,-xff_dicycle/xk(i))
+
+            xf_dicycle(i) = xf_ens(i,10)-xf_dicycle(i)
 
          enddo
       endif
-      !------------------------------------
+      !-----------------------------------------------------
       !-
-      !- add the kinetic energy at the gust front at the
-      !- mass flux closure
+      !- add the mass flux associated to the vertical velocity
+      !- at leading edge of the cold pool gust front as a surplus
+      !- for the mass flux already determined.
       !-
-      ! if(add_coldpool_clos == 4 )then
-      !   do vtp_index = get_num_elements(vec_ok),1,-1
-      !      i = get_data_value(vec_ok,vtp_index)
-      !       if(xk(i) >= 0) cycle
-      !       xf_coldpool(i) = -(0.5*wlpool(i)**2/tau_ecmwf(i)) /xk(i)
-      !    enddo
-      ! endif 
+      if(convection_tracer == 1 .and. add_coldpool_clos == 1 )then
+         do vtp_index = get_num_elements(vec_ok),1,-1
+            i = get_data_value(vec_ok,vtp_index)
+            fractional_area = sqrt (1.- sig(i)*sig(i))
+            xf_coldpool(i) = air_dens*fractional_area*wlpool(i)
+          enddo
+      endif 
    end subroutine cup_forcing_ens_deep
    !------------------------------------------------------------------------------------
    subroutine get_partition_liq_ice(ierr,tn,z1,zo_cup,po_cup, p_liq_ice,melting_layer  &
@@ -6779,7 +6786,7 @@ contains
          ,cap_maxs,sig_factor,cum_fadj_massflx,lcl_trigger       &
          ,rh_dicycle,cum_t_star, convection_tracer, tau_ocea_cp, tau_land_cp      &
          ,use_memory, add_coldpool_prop ,mx_buoy1, mx_buoy2,max_tq_tend           &
-         ,add_coldpool_clos,add_coldpool_diff,n_cldrop,output_sound
+         ,add_coldpool_clos,add_coldpool_trig,add_coldpool_diff,n_cldrop,output_sound
 
       inquire (file = trim (fn_nml), exist = exists)
       if (.not. exists) then
@@ -6813,6 +6820,7 @@ contains
          print*, 'convection_tracer  ' , convection_tracer
          print*, 'add_coldpool_prop  ' , add_coldpool_prop
          print*, 'add_coldpool_clos  ' , add_coldpool_clos
+         print*, 'add_coldpool_trig  ' , add_coldpool_trig
          print*, 'add_coldpool_diff  ' , add_coldpool_diff
          print*, 'tau_ocea_cp        ' , tau_ocea_cp
          print*, 'tau_land_cp        ' , tau_land_cp
@@ -7370,7 +7378,7 @@ contains
       endif
 
       !-- increase capmax 
-      if(ADD_COLDPOOL_CLOS >= 1)  then 
+      if(add_coldpool_trig >= 1)  then 
             do vtp_index = get_num_elements(vec_ok),1,-1
                i = get_data_value(vec_ok,vtp_index)
               !cap_max(i) = cap_max(i) + coldPoolStart_orig(x_add_buoy(i)) * 35.
@@ -8007,7 +8015,8 @@ contains
 
       !-- local vars
       integer :: i,k,vtp_index
-
+      
+      !- scale dependence factor for updraft
       if( use_scale_dep == 0  .or.  cumulus == 'shallow') then
          sig(:) = 1.0
       else
@@ -8024,7 +8033,7 @@ contains
             sig(i)= max(0.001,min(sig(i),1.))
          end do
       endif
-      !- scale dependence factor
+      !- scale dependence factor for downdraft
       if(downdraft == 0) then 
         sigd(:) = 0.0
       else
@@ -9874,7 +9883,8 @@ contains
       convection_tracer = 1 
       use_memory        = 2 
       add_coldpool_prop = 3 
-      add_coldpool_clos = 2 
+      add_coldpool_clos = 2
+      add_coldpool_trig = 0
       add_coldpool_diff = 3 
       tau_ocea_cp       = 7200. 
       tau_land_cp       = 7200. 

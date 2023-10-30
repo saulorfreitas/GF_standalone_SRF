@@ -57,7 +57,7 @@ program  gf_test
    mynum = 1
    p_use_gate = .false.
 
-   nloops = 100
+   nloops = 1
 
    IF(read_GF_ConvPar_nml) THEN
       modConvParGF_initialized = .false.
@@ -69,7 +69,7 @@ program  gf_test
    first_read = .true.
    ok = .true.
    icnt = 0
-   local_time = 9600. !600.
+   local_time = 9000. !600.
    inquire (iolength=int_byte_size) real_byte_size
 
    i = initModConvParGF()
