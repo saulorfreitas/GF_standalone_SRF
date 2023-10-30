@@ -4620,6 +4620,7 @@ contains
       do vtp_index = get_num_elements(vec_ok),1,-1
          i = get_data_value(vec_ok,vtp_index)
          xmbmax(i)=100.*(po_cup(kbcon(i),i)-po_cup(kbcon(i)+1,i))/(c_grav*dtime)
+         print*,"xmb",xmb(i),xf_coldpool(i),xmbmax(i)
          xmb(i) = min(xmb(i),xmbmax(i))
       enddo
 
@@ -4924,12 +4925,21 @@ contains
       !- at leading edge of the cold pool gust front as a surplus
       !- for the mass flux already determined.
       !-
-      if(convection_tracer == 1 .and. add_coldpool_clos == 1 )then
-         do vtp_index = get_num_elements(vec_ok),1,-1
-            i = get_data_value(vec_ok,vtp_index)
-            fractional_area = sqrt (1.- sig(i)*sig(i))
-            xf_coldpool(i) = air_dens*fractional_area*wlpool(i)
-          enddo
+      if(convection_tracer == 1 .and. add_coldpool_clos > 0) then 
+         if(add_coldpool_clos == 1 )then
+            do vtp_index = get_num_elements(vec_ok),1,-1
+               i = get_data_value(vec_ok,vtp_index)
+               fractional_area = sqrt (1.- sig(i)*sig(i))
+               xf_coldpool(i) = air_dens*fractional_area*wlpool(i)
+            enddo
+         endif
+         if(add_coldpool_clos == 2 )then
+            do vtp_index = get_num_elements(vec_ok),1,-1
+               i = get_data_value(vec_ok,vtp_index)
+               if(xk(i) >= 0.) cycle
+               xf_coldpool(i) = -(0.5*wlpool(i)**2/tau_ecmwf(i)) /xk(i)
+            enddo
+         endif
       endif 
    end subroutine cup_forcing_ens_deep
    !------------------------------------------------------------------------------------
