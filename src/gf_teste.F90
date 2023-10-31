@@ -129,10 +129,10 @@ program  gf_test
          allocate(ierr4d_tmp(mxp,myp,maxiens), jmin4d_tmp(mxp,myp,maxiens) ,klcl4d_tmp(mxp,myp,maxiens))
          allocate(k224d_tmp(mxp,myp,maxiens), kbcon4d_tmp(mxp,myp,maxiens), ktop4d_tmp(mxp,myp,maxiens))
           !
-         allocate(clwup5d_tmp(mxp,myp,mzp,maxiens), tup5d_tmp(mxp,myp,mzp,maxiens), conv_cld_fr5d_tmp(mxp,myp,mzp,maxiens))
-         allocate(dd_massdetr5d_tmp(mxp,myp,mzp,maxiens) ,zup5d_tmp(mxp,myp,mzp,maxiens), zdn5d_tmp(mxp,myp,mzp,maxiens))
-         allocate(prup5d_tmp(mxp,myp,mzp,maxiens), prdn5d_tmp(mxp,myp,mzp,maxiens), dd_massentr5d_tmp(mxp,myp,mzp,maxiens))
-         allocate(pcup5d_tmp(mxp,myp,mzp,maxiens), up_massentr5d_tmp(mxp,myp,mzp,maxiens), up_massdetr5d_tmp(mxp,myp,mzp,maxiens))
+         allocate(clwup5d_tmp(mzp,mxp,myp,maxiens), tup5d_tmp(mzp,mxp,myp,maxiens), conv_cld_fr5d_tmp(mzp,mxp,myp,maxiens))
+         allocate(dd_massdetr5d_tmp(mzp,mxp,myp,maxiens) ,zup5d_tmp(mzp,mxp,myp,maxiens), zdn5d_tmp(mzp,mxp,myp,maxiens))
+         allocate(prup5d_tmp(mzp,mxp,myp,maxiens), prdn5d_tmp(mzp,mxp,myp,maxiens), dd_massentr5d_tmp(mzp,mxp,myp,maxiens))
+         allocate(pcup5d_tmp(mzp,mxp,myp,maxiens), up_massentr5d_tmp(mzp,mxp,myp,maxiens), up_massdetr5d_tmp(mzp,mxp,myp,maxiens))
          allocate(src_chem(mtp,mzp,mxp,myp), tracer(mxp,myp,mzp,mtp))
          allocate(mp_ice(nmp,mzp,mxp,myp), mp_liq(nmp,mzp,mxp,myp), mp_cf(nmp,mzp,mxp,myp))
          allocate(sub_mpqi(nmp,mzp,mxp,myp), sub_mpql(nmp,mzp,mxp,myp), sub_mpcf(nmp,mzp,mxp,myp))
@@ -384,7 +384,13 @@ program  gf_test
       do nz=1,mzp
          write(l_unit,rec=irec) vsrc(nz,:,:)
          irec=irec+1
-      enddo  
+      enddo
+      do i=1,maxiens
+         do nz=1,mzp
+           write(l_unit,rec=irec) zup5d_tmp(nz,:,:,i)  
+           irec=irec+1
+         enddo 
+      enddo
       write(l_unit,rec=irec) conprr(:,:)
       close(l_unit)
 
@@ -398,7 +404,7 @@ program  gf_test
         write(l_unit,*) 'ydef ',myp,' linear ',glat(1,1),glat(1,2)-glat(1,1)
         write(l_unit,*) 'zdef ',mzp,'levels',flip
         write(l_unit,*) 'tdef 1 linear 00:00Z01JAN200 1mo'
-        write(l_unit,*) 'vars ',8
+        write(l_unit,*) 'vars ',11
         write(l_unit,*) 'thsrc',mzp,'99 ','K'
         write(l_unit,*) 'rtsrc',mzp,'99 ','K'
         write(l_unit,*) 'clsrc',mzp,'99 ','K'
@@ -406,6 +412,9 @@ program  gf_test
         write(l_unit,*) 'nisrc',mzp,'99 ','K'
         write(l_unit,*) 'usrc ',mzp,'99 ','K'
         write(l_unit,*) 'vsrc ',mzp,'99 ','K'
+        write(l_unit,*) 'zup1 ',mzp,'99 ','#'
+        write(l_unit,*) 'zup2 ',mzp,'99 ','#'
+        write(l_unit,*) 'zup3 ',mzp,'99 ','#'
         write(l_unit,*) 'conprr ','01',' 99 ','K'
         write(l_unit,*) 'endvars'
         close(l_unit)

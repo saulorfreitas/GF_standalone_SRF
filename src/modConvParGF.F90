@@ -4620,7 +4620,7 @@ contains
       do vtp_index = get_num_elements(vec_ok),1,-1
          i = get_data_value(vec_ok,vtp_index)
          xmbmax(i)=100.*(po_cup(kbcon(i),i)-po_cup(kbcon(i)+1,i))/(c_grav*dtime)
-         print*,"xmb",xmb(i),xf_coldpool(i),xmbmax(i)
+         !print*,"xmb",xmb(i),xf_coldpool(i),xmbmax(i)
          xmb(i) = min(xmb(i),xmbmax(i))
       enddo
 
