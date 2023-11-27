@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DIRHOME=/home/sfreitas/models/GF_standalone/scripts
-DIRHOME=$PWD
+DIRHOME=/Users/saulo.freitas/work/models/GF_standalone_SRF/
+#DIRHOME=$PWD
 SCRIPTS=${DIRHOME}/scripts
 DATAOUT=${DIRHOME}/dataout
 DATAIN=${DIRHOME}/datain
@@ -36,21 +36,21 @@ Eof1
 #---------------------------create GF namelist
 cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 &GF_NML  
-
+  output_sound     = 2,
   icumulus_gf      = 1,1,1, != trimodal plume (deep ,shallow ,congestus)
   
   closure_choice   = 10,10,3, != closure for the mass flux at the cloud base
   
-  cum_entr_rate    = 6.3e-4, 1.e-3, 5.e-4, != initial gross entrainment rate for 
-                                           != deep, shallow, congestus
+  cum_entr_rate    =6.3e-4, 1.e-3, 5.e-4, != initial gross entrainment rate for 
+                                          != deep, shallow, congestus
   
-  dicycle          = 1,            != 0/1:  diurnal cycle closure, default = 1
-
-  cum_t_star = 4., -99., -99.,     != scale temperature for 
+  dicycle          = 1,            != 0/1/2:  diurnal cycle closure, default = 1
+                                   != 2 adds Qadv closure (Becker et al 2021) 
+  cum_t_star = 4., -99., -99., != scale temperature for 
                                    !diurnal cycle closure, 
   rh_dicycle       = 0,            != 0/1: controls of RH on the diurnal cycle (see Tian et al 2022 GRL) 
                                    ! default = 0
-  
+
   use_scale_dep    = 1,     != 0/1: turn ON/OFF the scale dependence approach
   sig_factor       = 0.22,  != exponential factor for the sigma determination (orig = 0.1)
 
@@ -69,7 +69,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 
   sgs_w_timescale  = 1,     != 0/1: uses vertical velocity for determination of tau_ecmwf
   tau_deep         = 3600., != timescales for instability removal, only for sgs_w_timescale = 0
-  tau_mid          = 1200., 
+  tau_mid          =1200., 
 
   moist_trigger    = 0,     != 0/1: relative humidity effects on the cap_max trigger function
   adv_trigger      = 0,     != 0/1/3:  1 => Kain (2004), 3 => dcape trigger  Xie et al (2019)
@@ -83,8 +83,9 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 !---
 !--- controls rainfall evaporation
   use_rebcb            = 1, != 0/1: turn ON/OFF rainfall evap below cloud base
+
   cum_MAX_EDT_LAND     = 0.9, 0.0, 0.2,   !-(deep ,shallow ,congestus)
-  cum_MAX_EDT_OCEAN    = 0.9, 0.0, 0.2,
+  cum_MAX_EDT_OCEAN      = 0.9, 0.0, 0.2,
 !----
 
 !---- boundary condition specification
@@ -93,7 +94,6 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 !----
 
 !---- for mass flux profiles - (deep ,shallow ,congestus)
-!  cum_zuform               = 20,20,20,
   cum_HEI_UPDF_LAND    = 0.55, 0.1, 0.55,  != height of maximum Z_updraft
   cum_HEI_UPDF_OCEAN   = 0.55, 0.1, 0.55,
 
@@ -108,8 +108,8 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 !----
 
 !---- the 'cloud microphysics'
-   autoconv        = 4,
-   qrc_crit        = 6.0e-4,
+  autoconv        = 4,
+  qrc_crit        =6.0e-4,
 
    c0_deep         = 1.0e-3,
    c0_shal         = 0.0e-3,
@@ -151,13 +151,34 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   use_wetbulb           = 0,
   vert_discr            = 1, 
   clev_grid             = 1, 
-  max_tq_tend           = 500., 
-  output_sound          = 2,
+  max_tq_tend        = 500., 
 !-----
+
+&end!-----
 
 &end
 Eof0
 #--
+
+# Verificando o argumento de entrada
+COMPILER=${1:-"gnu"}
+if [ -z "${1}" ]
+then
+  echo "Compiler is not set: gnu or intel"
+  echo "$COMPILER is set by default" 
+fi
+  
+echo "COMPILER=$COMPILER"
+
+cd ${BIN}
+/bin/rm gf.x
+/bin/cp Makefile_3D Makefile
+echo "Compilando"
+#comando="make clean; make $COMPILER"
+comando="make $COMPILER"
+echo $comando; eval $comando
+
+
 
 #-----------------------------run GF standalone
 i=''

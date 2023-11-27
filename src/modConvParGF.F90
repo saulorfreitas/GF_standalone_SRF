@@ -3873,7 +3873,7 @@ contains
            !-- higher hei_max_zu_updraft, lower effec entrainment, lower precip
            ! adj_cp_entr = min(1.3,max(1.0, 2.-coldPoolStart(x_add_buoy)))
            !
-           !-- lower, larger effec entrainment, larger precip
+           !-- lower hei_max_zu_updraft, larger effec entrainment, larger precip
              adj_cp_entr = min(1.0,max(0.7,    coldPoolStart(x_add_buoy)))
 
       endif

@@ -129,10 +129,10 @@ program  gf_test
          allocate(ierr4d_tmp(mxp,myp,maxiens), jmin4d_tmp(mxp,myp,maxiens) ,klcl4d_tmp(mxp,myp,maxiens))
          allocate(k224d_tmp(mxp,myp,maxiens), kbcon4d_tmp(mxp,myp,maxiens), ktop4d_tmp(mxp,myp,maxiens))
           !
-         allocate(clwup5d_tmp(mxp,myp,mzp,maxiens), tup5d_tmp(mxp,myp,mzp,maxiens), conv_cld_fr5d_tmp(mxp,myp,mzp,maxiens))
-         allocate(dd_massdetr5d_tmp(mxp,myp,mzp,maxiens) ,zup5d_tmp(mxp,myp,mzp,maxiens), zdn5d_tmp(mxp,myp,mzp,maxiens))
-         allocate(prup5d_tmp(mxp,myp,mzp,maxiens), prdn5d_tmp(mxp,myp,mzp,maxiens), dd_massentr5d_tmp(mxp,myp,mzp,maxiens))
-         allocate(pcup5d_tmp(mxp,myp,mzp,maxiens), up_massentr5d_tmp(mxp,myp,mzp,maxiens), up_massdetr5d_tmp(mxp,myp,mzp,maxiens))
+         allocate(clwup5d_tmp(mzp,mxp,myp,maxiens), tup5d_tmp(mzp,mxp,myp,maxiens), conv_cld_fr5d_tmp(mzp,mxp,myp,maxiens))
+         allocate(dd_massdetr5d_tmp(mzp,mxp,myp,maxiens) ,zup5d_tmp(mzp,mxp,myp,maxiens), zdn5d_tmp(mzp,mxp,myp,maxiens))
+         allocate(prup5d_tmp(mzp,mxp,myp,maxiens), prdn5d_tmp(mzp,mxp,myp,maxiens), dd_massentr5d_tmp(mzp,mxp,myp,maxiens))
+         allocate(pcup5d_tmp(mzp,mxp,myp,maxiens), up_massentr5d_tmp(mzp,mxp,myp,maxiens), up_massdetr5d_tmp(mzp,mxp,myp,maxiens))
          allocate(src_chem(mtp,mzp,mxp,myp), tracer(mxp,myp,mzp,mtp))
          allocate(mp_ice(nmp,mzp,mxp,myp), mp_liq(nmp,mzp,mxp,myp), mp_cf(nmp,mzp,mxp,myp))
          allocate(sub_mpqi(nmp,mzp,mxp,myp), sub_mpql(nmp,mzp,mxp,myp), sub_mpcf(nmp,mzp,mxp,myp))
@@ -358,15 +358,15 @@ program  gf_test
                access='direct', status='replace', recl=rec_size)
       irec=1
       do nz=1,mzp
-         write(l_unit,rec=irec) thsrc(nz,:,:)
+         write(l_unit,rec=irec) thsrc(nz,:,:)*86400.
          irec=irec+1
       enddo
       do nz=1,mzp
-         write(l_unit,rec=irec) rtsrc(nz,:,:)
+         write(l_unit,rec=irec) rtsrc(nz,:,:)*86400.*1000.
          irec=irec+1
       enddo         
       do nz=1,mzp
-         write(l_unit,rec=irec) clsrc(nz,:,:)
+         write(l_unit,rec=irec) clsrc(nz,:,:)*86400.*1000.
          irec=irec+1
       enddo       
       do nz=1,mzp
@@ -374,39 +374,78 @@ program  gf_test
          irec=irec+1
       enddo  
       do nz=1,mzp
-         write(l_unit,rec=irec) nisrc(nz,:,:)
+         write(l_unit,rec=irec) pcup5d_tmp(nz,:,:,1)
          irec=irec+1
       enddo  
       do nz=1,mzp
-         write(l_unit,rec=irec) usrc(nz,:,:)
+         write(l_unit,rec=irec) usrc(nz,:,:)*86400.
          irec=irec+1
       enddo  
       do nz=1,mzp
-         write(l_unit,rec=irec) vsrc(nz,:,:)
+         write(l_unit,rec=irec) vsrc(nz,:,:)*86400.
          irec=irec+1
-      enddo  
+      enddo
+      do i=1,maxiens
+         do nz=1,mzp
+           write(l_unit,rec=irec) zup5d_tmp(nz,:,:,i)  
+           irec=irec+1
+         enddo 
+      enddo
+      do i=1,maxiens
+         do nz=1,mzp
+           write(l_unit,rec=irec) up_massentr5d_tmp(nz,:,:,i)*1000.
+           irec=irec+1
+         enddo 
+      enddo
+      do i=1,maxiens
+         do nz=1,mzp
+           write(l_unit,rec=irec) up_massdetr5d_tmp(nz,:,:,i)*1000. 
+           irec=irec+1
+         enddo 
+      enddo
+
+      do i=1,maxiens
+           write(l_unit,rec=irec) real(ktop4d_tmp(:,:,i),4)
+           irec=irec+1 
+      enddo
+      
+      conprr=conprr*3600.
+      where (conprr < 1.e-6) conprr=-999999.
       write(l_unit,rec=irec) conprr(:,:)
+
       close(l_unit)
 
       open(newunit = l_unit, file="../dataout/gf_dataOut-"//ctime//".ctl", action='write', status='replace')
 
         write(l_unit,*) 'dset ^'//"gf_dataOut-"//ctime//".gra"
         !writing others infos to ctl
-        write(l_unit,*) 'undef -0.9990000E+34'
+        write(l_unit,*) 'undef -999999.'
         write(l_unit,*) 'title GF_teste'
         write(l_unit,*) 'xdef ',mxp,' linear ',glon(1,1),glon(2,1)-glon(1,1)
         write(l_unit,*) 'ydef ',myp,' linear ',glat(1,1),glat(1,2)-glat(1,1)
         write(l_unit,*) 'zdef ',mzp,'levels',flip
         write(l_unit,*) 'tdef 1 linear 00:00Z01JAN200 1mo'
-        write(l_unit,*) 'vars ',8
-        write(l_unit,*) 'thsrc',mzp,'99 ','K'
-        write(l_unit,*) 'rtsrc',mzp,'99 ','K'
+        write(l_unit,*) 'vars ',20
+        write(l_unit,*) 'thsrc',mzp,'99 ','K' 
+        write(l_unit,*) 'rtsrc',mzp,'99 ','K' 
         write(l_unit,*) 'clsrc',mzp,'99 ','K'
         write(l_unit,*) 'nlsrc',mzp,'99 ','K'
-        write(l_unit,*) 'nisrc',mzp,'99 ','K'
+        write(l_unit,*) 'press',mzp,'99 ','mbar'
         write(l_unit,*) 'usrc ',mzp,'99 ','K'
         write(l_unit,*) 'vsrc ',mzp,'99 ','K'
-        write(l_unit,*) 'conprr ','01',' 99 ','K'
+        write(l_unit,*) 'zup1 ',mzp,'99 ','#'
+        write(l_unit,*) 'zup2 ',mzp,'99 ','#'
+        write(l_unit,*) 'zup3 ',mzp,'99 ','#'
+        write(l_unit,*) 'eup1 ',mzp,'99 ','#'
+        write(l_unit,*) 'eup2 ',mzp,'99 ','#'
+        write(l_unit,*) 'eup3 ',mzp,'99 ','#'
+        write(l_unit,*) 'dup1 ',mzp,'99 ','#'
+        write(l_unit,*) 'dup2 ',mzp,'99 ','#'
+        write(l_unit,*) 'dup3 ',mzp,'99 ','#'
+        write(l_unit,*) 'ktop1  ','01',' 99 ','#'
+        write(l_unit,*) 'ktop2  ','01',' 99 ','#'
+        write(l_unit,*) 'ktop3  ','01',' 99 ','#'
+        write(l_unit,*) 'conprr ','01',' 99 ','mm'
         write(l_unit,*) 'endvars'
         close(l_unit)
 

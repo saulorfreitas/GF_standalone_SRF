@@ -27,6 +27,7 @@ fi
 echo "COMPILER=$COMPILER"
 
 cd ${BIN}
+/bin/rm gf.x
 /bin/cp Makefile_3D Makefile
 echo "Compilando"
 #comando="make clean; make $COMPILER"

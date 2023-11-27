@@ -1,5 +1,5 @@
 &GF_NML  
-  output_sound       = 2,
+  output_sound     = 2,
   icumulus_gf      = 1,1,1, != trimodal plume (deep ,shallow ,congestus)
   
   closure_choice   = 10,10,3, != closure for the mass flux at the cloud base
@@ -13,8 +13,6 @@
                                    !diurnal cycle closure, 
   rh_dicycle       = 0,            != 0/1: controls of RH on the diurnal cycle (see Tian et al 2022 GRL) 
                                    ! default = 0
-  
-  !!obsolete alpha_adv_tuning = 0.8,   != tuning parameter for the Becker et al (2021) closure (only for option 2)
 
   use_scale_dep    = 1,     != 0/1: turn ON/OFF the scale dependence approach
   sig_factor       = 0.22,  != exponential factor for the sigma determination (orig = 0.1)
@@ -29,7 +27,7 @@
   tau_land_cp       =7200.,
   mx_buoy1          = 250.5,   ! J/kg
   mx_buoy2          = 20004.0, ! J/kg
-  use_memory        = 0,
+  use_memory        = 2,
   use_gustiness     = 0,
 
   sgs_w_timescale  = 1,     != 0/1: uses vertical velocity for determination of tau_ecmwf
@@ -54,13 +52,11 @@
 !----
 
 !---- boundary condition specification
-  !!obsolete bc_meth              = 1,
   cum_use_excess       =2,1,1,
   cum_ave_layer        = 50.,25.,25.,!- (deep ,shallow ,congestus)
 !----
 
 !---- for mass flux profiles - (deep ,shallow ,congestus)
-  !!obsolete cum_zuform               = 20,20,20,
   cum_HEI_UPDF_LAND    = 0.55, 0.1, 0.55,  != height of maximum Z_updraft
   cum_HEI_UPDF_OCEAN   = 0.55, 0.1, 0.55,
 
@@ -114,15 +110,13 @@
   use_smooth_tend       = 1, 
   use_cloud_dissipation = 0., 
   frac_modis            = 1, 
-!  evap_fix              = 1, 
-  !!obsolete satur_calc            = 1,  
   overshoot             = 0,
   use_wetbulb           = 0,
-  !!obsolete c1                    = 0.e-3, 
-!  zero_diff             = 0,
   vert_discr            = 1, 
   clev_grid             = 1, 
   max_tq_tend        = 500., 
 !-----
+
+&end!-----
 
 &end
