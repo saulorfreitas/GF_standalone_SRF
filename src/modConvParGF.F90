@@ -762,8 +762,8 @@ contains
 
             !--- only for GATE soundingg
             if(trim(RUNDATA) == "GATE.dat") then
-                jlx= jl
-               !jlx= 30 ! to run with only one soundings
+               !jlx= jl
+                jlx= 10 ! to run with only one soundings
                !buoy_exc2d(:,:) = float(jl)*30.
                !print*,"GATE",jl,jlx,buoy_exc2d(1,1)
                !jlx= 42 ! to run with only one soundings
@@ -2270,7 +2270,6 @@ contains
       
       endif !- end of section for atmospheric composition
       !---------------------------------------------------------------------------------------------!
-
       !
       !-- GATE soundings
       if(p_use_gate .or. wrtgrads) then
@@ -2280,10 +2279,9 @@ contains
                      , outq, outqc, outt, outu, outv, p_liq_ice, po, po_cup, pre, prec_flx, pwdo, pwo, q_cup, q, qcdo, qco &
                      , qeso_cup, qo_cup, qo , qrco, qrs, sc_dn_chem, sc_up_chem, se_chem, se_cup_chem, subten_h, subten_q &
                      , subten_t , t_cup, t, tn, tot_pw_dn_chem, tot_pw_up_chem, up_massentro, up_massdetro, us, vvel1d &
-                     , vvel2d, xmb, z_cup, zdo, zenv, zo, zqexec, zuo, zws, cumulus)
+                     , vvel2d, xmb, z_cup, zdo, zenv, zo, zqexec, zuo, zws,  heso_cup, heo_cup,cumulus)
       endif
       ! 
-      
       !-- miscelaneous procedures for output and/or debug
       !
       !-- get the total (deep+congestus) evaporation flux for output (units kg/kg/s)
@@ -3576,7 +3574,8 @@ contains
       integer, parameter :: MASS_U_OPTION = 1
       integer, parameter :: SMOOTH_DEPTH  = 2 ! -- increasing this parameter,
                                               ! -- strongly damps the heat/drying rates, precip ...
-      integer ::  incr1=1, incr2=1, nlay, k_ent
+      integer ::  incr1=1, incr2=1, nlay
+      !real:: max_entr_rate = 3.e-3, x1,x2
       !---
       SMOOTH = .false.
       if(USE_SMOOTH_PROF == 1)  SMOOTH = .true.
@@ -3611,18 +3610,28 @@ contains
             zuo_ave = 0.5*(zuo(k+1,i)+zuo(k,i))
 
             up_massdetro(k,i)=cd(k,i)*dz*zuo_ave
-
             up_massentro(k,i)=zuo(k+1,i)-zuo(k,i)+up_massdetro(k,i)
+            !-- check limits of allowed entrainment rates 
             up_massentro(k,i)=max(up_massentro(k,i),min_entr_rate*dz*zuo_ave)
+            
+!xxxxxxxxxx
+!             x1 = up_massentro(k,i)
+!             x2 = up_massentro(k,i)/(dz*zuo_ave)
+!             if (x2 > 100000*max_entr_rate) then 
+!               zuo(k+1,i) = zuo(k,i) + zuo_ave*dz*(max_entr_rate-cd(k,i))
+!               zuo_ave = 0.5*(zuo(k+1,i)+zuo(k,i))
+!               up_massdetro(k,i)=cd(k,i)*dz*zuo_ave
+!               up_massentro(k,i)=zuo(k+1,i)-zuo(k,i)+up_massdetro(k,i)
+!               entr_rate_2d(k,i)=up_massentro(k,i)/(dz*zuo_ave)
+!               !print*,"ent2",k,entr_rate_2d(k,i)*1000.,x2*1000,up_massentro(k,i)*1000
+!             endif
+!xxxxxxxxxx       
 
-            !-- check dd_massdetro in case of dd_massentro has been changed above
+            !-- check up_massdetro in case of up_massentro has been changed above
             up_massdetro(k,i)=-zuo(k+1,i)+zuo(k,i)+up_massentro(k,i)
 
-            !if(zuo(k-1,i).gt.0.) then
             cd          (k,i)=up_massdetro(k,i)/(dz*zuo_ave)
             entr_rate_2d(k,i)=up_massentro(k,i)/(dz*zuo_ave)
-           !endif
-           !if(draft=='shallow')print*,"ent1=",k,real(entr_rate_2d(k,i),4)!,real((min(zo_cup(i,k_ent)/zo_cup(k-1,i),1.)))
 
          enddo
 
@@ -3631,6 +3640,7 @@ contains
          do k=k_ent+1,ktop(i)-1
             entr_rate_2d(k,i)=entr_rate_2d(k_ent,i)*(min(zo_cup(k_ent,i)/zo_cup(k,i),1.))
             entr_rate_2d(k,i)=max(min_entr_rate, entr_rate_2d(k,i))
+           !entr_rate_2d(k,i)=min(max_entr_rate, entr_rate_2d(k,i))
           !if(draft=='shallow')print*,"ent2=",k,real(entr_rate_2d(k,i),4),real((min(zo_cup(i,k_ent)/zo_cup(k,i),1.)))
          enddo
          entr_rate_2d(ktop(i):kte,i)=0.
@@ -3729,7 +3739,6 @@ contains
             cd          (k,i)=0.
             entr_rate_2d(k,i)=0.
          enddo
-
       enddo ! i
 
       return 
@@ -3870,6 +3879,7 @@ contains
       endif
       if(draft == "deep_up" .or. draft == "mid_up" ) then       !--- land/ocean
 
+         !adj_cp_entr = min(1.0,max(0.7, coldPoolStart(float(JL)*10.)))
          hei_updf=(1.-xland)*hei_updf_LAND+xland*hei_updf_OCEAN
          !- add a randomic perturbation
          hei_updf = hei_updf + random
@@ -3879,17 +3889,19 @@ contains
          !
          !- sanity check
          hei_updf = max(0.1, min(0.9, hei_updf)) 
+         
          !- for gate soundings
-         !
-         !hei_updf = max(0.1, min(1.,float(JL)/100.))
-         !beta =1.0+float(JL)/100. * 5.
-
+         !hei_updf = max(0.2, min(0.8,(float(JL))/100.))
+         
          !--hei_updf parameter goes from 0 to 1 = rainfall decreases with hei_updf
          pmaxzu  =  (psur-100.) * (1.- 0.5*hei_updf) + 0.6*( po_cup(kt) ) * 0.5*hei_updf
 
          !- beta parameter: must be larger than 1, higher makes the profile sharper around the maximum zu
-         !beta    = max(1.1, 2.1 - 0.5*hei_updf)
-         beta=2.2
+         !beta   = max(1.1, 2.2 - 0.8*hei_updf)
+         beta    = min(3., 3.5 - 1.8*hei_updf)
+
+         !beta =3.1-float(JL)/100. !- for gate soundings
+         !print*,"beta",jl,beta,hei_updf,adj_cp_entr
          
          kb_adj=minloc(abs(po_cup(kts:kt)-pmaxzu),1)
          kb_adj=max(kb,kb_adj)
@@ -4620,7 +4632,7 @@ contains
       do vtp_index = get_num_elements(vec_ok),1,-1
          i = get_data_value(vec_ok,vtp_index)
          xmbmax(i)=100.*(po_cup(kbcon(i),i)-po_cup(kbcon(i)+1,i))/(c_grav*dtime)
-         print*,"xmb",xmb(i),xf_coldpool(i),xmbmax(i)
+         !print*,"xmb",xmb(i),xf_coldpool(i),xmbmax(i)
          xmb(i) = min(xmb(i),xmbmax(i))
       enddo
 
@@ -5162,7 +5174,7 @@ contains
                           , outq, outqc, outt, outu, outv, p_liq_ice, po, po_cup, pre, prec_flx, pwdo, pwo, q_cup, q_in, qcdo, qco &
                           , qeso_cup, qo_cup, qo , qrco, qrr, sc_dn_chem, sc_up_chem, se_chem, se_cup_chem, subten_h, subten_q &
                           , subten_t , t_cup, t_in, tn, tot_pw_dn_chem, tot_pw_up_chem, up_massentro, up_massdetro, us, vvel1d &
-                          , vvel2d, xmb, z_cup, zdo, zenv, zo, zqexec, zuo, zws, cumulus)
+                          , vvel2d, xmb, z_cup, zdo, zenv, zo, zqexec, zuo, zws, heso_cup, heo_cup, cumulus)
       !! ## Gate soundings
       !!
       !! Author: Rodrigues, L. F. [LFR]
@@ -5215,6 +5227,8 @@ contains
       real, intent(in) :: hc(:,:)
       real, intent(in) :: hco(:,:)
       real, intent(in) :: he_cup(:,:)
+      real, intent(in) :: heso_cup(:,:)
+      real, intent(in) :: heo_cup(:,:)
       real, intent(in) :: HKB(:)
       real, intent(in) :: massf
       real, intent(in) :: massi
@@ -5355,12 +5369,13 @@ contains
                call setGradsVar(jl, k, nvar, outnice(k,i)*86400., "outnice"//cty, 'out # ice1/day', '3d')
                call setGradsVar(jl, k, nvar, outnliq(k,i)*86400., "outnliq"//cty, 'out # liq /day', '3d')
             end if
-            call setGradsVar(jl, k, nvar, zuo(k,i)/xmb(i), "zup"//cty, 'norm m flux up ', '3d')
-            call setGradsVar(jl, k, nvar, zdo(k,i)/xmb(i), "zdn"//cty, 'norm m flux dn ', '3d')
-            call setGradsVar(jl, k, nvar, zenv(k,i), "zenv"//cty, 'norm m flux env ', '3d')
-            call setGradsVar(jl, k, nvar, -edto(i)*xmb(i)*zdo(k,i), "mdn"//cty, 'm flux down (kg/s/m^2)', '3d')
+            call setGradsVar(jl, k, nvar, zuo(k,i)/(1.e-12+xmb(i)), "zup"//cty, 'norm m flux up ', '3d')
+            call setGradsVar(jl, k, nvar, zdo(k,i)/(1.e-12+xmb(i)), "zdn"//cty, 'norm m flux dn ', '3d')
+            call setGradsVar(jl, k, nvar, zenv(k,i)/(1.e-12+xmb(i)), "zenv"//cty, 'norm m flux env ', '3d')
+!           call setGradsVar(jl, k, nvar, -edto(i)*xmb(i)*zdo(k,i), "mdn"//cty, 'm flux down (kg/s/m^2)', '3d')
+            call setGradsVar(jl, k, nvar, -zdo(k,i), "mdn"//cty, 'm flux down (kg/s/m^2)', '3d')
             call setGradsVar(jl, k, nvar, up_massentro(k,i), "upent"//cty, 'up_massentr(kg/s/m^2)', '3d')
-            call setGradsVar(jl, k, nvar, xmb(i)*up_massdetro(k,i), "updet"//cty, 'up_massdetr(kg/s/m^2)', '3d')
+            call setGradsVar(jl, k, nvar, up_massdetro(k,i)/(1.e-12+xmb(i)), "updet"//cty, 'up_massdetr(kg/s/m^2)', '3d')
             call setGradsVar(jl, k, nvar, outt(k,i)*86400., "outt"//cty, 'outt K/day', '3d')
             call setGradsVar(jl, k, nvar, resten_t*86400., "rest"//cty, 'residuo T K/day', '3d')
             call setGradsVar(jl, k, nvar, resten_h*86400./real(c_cp), "resh"//cty, 'residuo H J/kg/day', '3d')
@@ -5399,8 +5414,10 @@ contains
             call setGradsVar(jl, k, nvar, xmb(i)*dd_massentro(k,i), "ddent"//cty, 'dd_massentr(kg/s/m^2)', '3d')
             call setGradsVar(jl, k, nvar, xmb(i)*dd_massdetro(k,i), "dddet"//cty, 'dd_massdetr(kg/s/m^2)', '3d')
                   !!     cycle
-            call setGradsVar(jl, k, nvar, hc(k,i), "hc"//cty, ' hc', '3d')
-            call setGradsVar(jl, k, nvar, hco(k,i), "hco"//cty, ' hco', '3d')
+            call setGradsVar(jl, k, nvar, hc(k,i)/c_cp, "hc"//cty, ' hc', '3d')
+            call setGradsVar(jl, k, nvar, hco(k,i)/c_cp, "hco"//cty, ' hco', '3d')
+            call setGradsVar(jl, k, nvar, heso_cup(k,i)/c_cp, "heso"//cty, ' heso_cup', '3d')
+            call setGradsVar(jl, k, nvar, heo_cup(k,i)/c_cp, "heo"//cty, ' heo_cup', '3d')
             call setGradsVar(jl, k, nvar, dby(k,i), "dby"//cty, ' dbuo', '3d')
             !call set_grads_var(jl,k,nvar,QCUP(k,i),"qcup"//cty ,'C_UP','3d')
             call setGradsVar(jl, k, nvar, t_cup(k,i) - 273.15, "te"//cty, ' K', '3d')
@@ -5416,8 +5433,8 @@ contains
             call setGradsVar(jl, k, nvar, z_cup(max(1, jmin(i)) ,i), "zjmin"//cty, ' m', '2d')
             call setGradsVar(jl, k, nvar, zws(i), "ws"//cty, ' m/s', '2d')
             call setGradsVar(jl, k, nvar, clfrac(k,i), "clfrac"//cty, 'shcf #', '3d')
-            call setGradsVar(jl, k, nvar, entr_rate_2d(k,i), "entr"//cty, ' m-1', '3d')
-            call setGradsVar(jl, k, nvar, cd(k,i), "detr"//cty, ' m-1', '3d')
+            call setGradsVar(jl, k, nvar, entr_rate_2d(k,i)*1000., "entr"//cty, ' km-1', '3d')
+            call setGradsVar(jl, k, nvar, cd(k,i)*1000., "detr"//cty, ' km-1', '3d')
             call setGradsVar(jl, k, nvar, pwdo(k,i), "pwd"//cty, ' xx', '3d')
             call setGradsVar(jl, k, nvar, edto(i), "edt"//cty, 'edt kg/m2/s', '2d')
             call setGradsVar(jl, k, nvar, e_dn, "EVAP"//cty, ' xx', '3d')
@@ -7360,6 +7377,8 @@ contains
 
             call get_cloud_bc(cumulus,ave_layer,kts,kte,ktf,xland(i),po(kts:kte,i) &
                              ,buoy_exc (kts:kte,i),x_add_buoy (i),kts)
+            !- for gate soundings
+            !x_add_buoy (i) = float(JL*40)
 
             x_add_buoy (i) = min (x_add_buoy (i), 0.5*mx_buoy2)
 

@@ -1,6 +1,6 @@
 
  &run
-  runname   = "ref_g",  
+  runname   = "CPUM22_Fy_pgi",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,

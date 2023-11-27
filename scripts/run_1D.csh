@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DIRHOME=/home/sfreitas/models/GF_standalone/scripts
-DIRHOME=$PWD
+DIRHOME=/home/sfreitas/models/GF_standalone_SRF
+#DIRHOME=$PWD
 SCRIPTS=${DIRHOME}/scripts
 DATAOUT=${DIRHOME}/dataout_1_coluna
 DATAIN=${DIRHOME}/datain_1_coluna
@@ -10,6 +10,24 @@ BIN=${DIRHOME}/bin
 #echo $BIN; exit
 
 #---------------------------create the executable
+# Verificando o argumento de entrada
+COMPILER=${1:-"gnu"}
+if [ -z "${1}" ]
+then
+  echo "Compiler is not set: gnu or intel"
+  echo "$COMPILER is set by default" 
+fi
+  
+echo "COMPILER=$COMPILER"
+
+cd ${BIN}
+/bin/rm gf.x
+/bin/cp Makefile_1D Makefile
+echo "Compilando"
+#comando="make clean; make $COMPILER"
+comando="make $COMPILER"
+echo $comando; eval $comando
+
 #rm -f gf.x
 #mk_${1}
 #
@@ -19,7 +37,7 @@ BIN=${DIRHOME}/bin
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "ref_${1}",  
+  runname   = "CPUM22_Fy_${1}",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
@@ -37,7 +55,7 @@ Eof1
 cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 &GF_NML  
 
-  icumulus_gf      = 1,1,1, != trimodal plume (deep ,shallow ,congestus)
+  icumulus_gf      = 1,0,0, != trimodal plume (deep ,shallow ,congestus)
   
   closure_choice   = 10,10,3, != closure for the mass flux at the cloud base
   
@@ -56,14 +74,15 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 
   convection_tracer = 1,
   add_coldpool_prop = 3,
-  add_coldpool_clos = 2,
+  add_coldpool_clos = 0,
+  add_coldpool_trig = 0,
   add_coldpool_diff = 3,
 
   tau_ocea_cp       =7200.,
   tau_land_cp       =7200.,
   mx_buoy1          = 250.5,   ! J/kg
   mx_buoy2          = 20004.0, ! J/kg
-  use_memory        = 2,
+  use_memory        = 22,
   use_gustiness     = 0,
 
   sgs_w_timescale  = 1,     != 0/1: uses vertical velocity for determination of tau_ecmwf
@@ -151,7 +170,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   vert_discr            = 1, 
   clev_grid             = 1, 
   max_tq_tend           = 500., 
-  output_sound          = 2,
+  output_sound          = 0,
 !-----
 
 &end
@@ -159,13 +178,18 @@ Eof0
 #--
 
 #-----------------------------run GF standalone
-i=''
-(cd ${DATAIN};
-$BIN/gf.x > gf.out
+
+cd ${DATAIN}
+/bin/rm gf.x
+/bin/cp $BIN/gf.x .
+./gf.x > gf.out
+
+
 #ls -ltr *ctl
+exit
 echo "compare --------"
 cmp ${DATAOUT}/ref_$i.gra ${DIRHOME}/refs/ref_g.gra
-)
+
 
 
 

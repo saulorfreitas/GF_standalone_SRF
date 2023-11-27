@@ -259,7 +259,7 @@ program GF_1d_driver
    do icr=1, icrf     !CR: loop para dar volume de execucao no codigo      
    
    do jl=1,klon_LOCAL !klon=number of soundings
-   !do jl=1,1 !klon=number of soundings
+   !do jl=10,10 !klon=number of soundings
 
      TIME=TIME+DTLT
      !IF(TIME/86400. > 2.) CYCLE
@@ -297,10 +297,10 @@ program GF_1d_driver
     REVSU_GF           =0.
 
    !if(JL .ne. 40) cycle
-   !print*," ====================================================================="
-   !print*,"Sounding =",jl
+    print*," ====================================================================="
+    print*,"Sounding =",jl
 
-    print*, "Processando GF"
+    !print*, "Processando GF"
     CALL convParGFDriver(mxp,myp,KLEV_LOCAL,mtp ,nmp, time, itime1 &
                       ,ims,ime, jms,jme, kms,kme   &
                       ,its,ite, jts,jte, kts,kte   &
