@@ -64,7 +64,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   tau_land_cp       =7200.,
   mx_buoy1          = 250.5,   ! J/kg
   mx_buoy2          = 20004.0, ! J/kg
-  use_memory        = 0,
+  use_memory        = 2,
   use_gustiness     = 0,
 
   sgs_w_timescale  = 1,     != 0/1: uses vertical velocity for determination of tau_ecmwf
@@ -159,6 +159,26 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 &end
 Eof0
 #--
+
+# Verificando o argumento de entrada
+COMPILER=${1:-"gnu"}
+if [ -z "${1}" ]
+then
+  echo "Compiler is not set: gnu or intel"
+  echo "$COMPILER is set by default" 
+fi
+  
+echo "COMPILER=$COMPILER"
+
+cd ${BIN}
+/bin/rm gf.x
+/bin/cp Makefile_3D Makefile
+echo "Compilando"
+#comando="make clean; make $COMPILER"
+comando="make $COMPILER"
+echo $comando; eval $comando
+
+
 
 #-----------------------------run GF standalone
 i=''
