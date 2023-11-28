@@ -3574,7 +3574,7 @@ contains
       integer, parameter :: MASS_U_OPTION = 1
       integer, parameter :: SMOOTH_DEPTH  = 2 ! -- increasing this parameter,
                                               ! -- strongly damps the heat/drying rates, precip ...
-      integer ::  incr1=1, incr2=1, nlay
+      integer ::  incr1=1, incr2=1, nlay, k_ent
       !real:: max_entr_rate = 3.e-3, x1,x2
       !---
       SMOOTH = .false.
@@ -3862,8 +3862,8 @@ contains
       integer :: k1
       real :: wgty,dp_layer,slope,adj_cp_entr
      
-      DO_SMOOTH = .false.
-      if(USE_SMOOTH_PROF == 1)  DO_SMOOTH = .true.
+      DO_SMOOTH = .true.
+      !if(USE_SMOOTH_PROF == 1)  DO_SMOOTH = .true.
 
       !-- fill zu with zeros
       zul=0.0
@@ -3879,8 +3879,8 @@ contains
       endif
       if(draft == "deep_up" .or. draft == "mid_up" ) then       !--- land/ocean
 
-         !adj_cp_entr = min(1.0,max(0.7, coldPoolStart(float(JL)*10.)))
          hei_updf=(1.-xland)*hei_updf_LAND+xland*hei_updf_OCEAN
+         
          !- add a randomic perturbation
          hei_updf = hei_updf + random
          !
@@ -3898,10 +3898,10 @@ contains
 
          !- beta parameter: must be larger than 1, higher makes the profile sharper around the maximum zu
          !beta   = max(1.1, 2.2 - 0.8*hei_updf)
-         beta    = min(3., 3.5 - 1.8*hei_updf)
-
-         !beta =3.1-float(JL)/100. !- for gate soundings
-         !print*,"beta",jl,beta,hei_updf,adj_cp_entr
+         beta    = min(3.0, 3.5 - 1.8*hei_updf)
+         
+         !- for gate soundings
+         !beta   = 3.1-float(JL)/100. 
          
          kb_adj=minloc(abs(po_cup(kts:kt)-pmaxzu),1)
          kb_adj=max(kb,kb_adj)
@@ -3944,15 +3944,15 @@ contains
             enddo
 
             !--from ktop
-            zul(kt)=zu(kt)*0.1
-            do k=kt-1,max( kt-min(maxloc(zu,1),5),kts) ,-1
-               zul(k)=(zul(k+1)+zu(k))*0.5
-            enddo
-            wgty=0.0
-            do k=kt,max( kt-min(maxloc(zu,1),5), kts ),-1
-               wgty=wgty+1./(float(min(maxloc(zu,1),5))+1)
-               zu(k)=zul(k)*(1.-wgty)+ zu(k)*wgty
-            enddo
+            ! zul(kt)=zu(kt)*0.1
+            ! do k=kt-1,max( kt-min(maxloc(zu,1),5),kts) ,-1
+            !    zul(k)=(zul(k+1)+zu(k))*0.5
+            ! enddo
+            ! wgty=0.0
+            ! do k=kt,max( kt-min(maxloc(zu,1),5), kts ),-1
+            !    wgty=wgty+1./(float(min(maxloc(zu,1),5))+1)
+            !    zu(k)=zul(k)*(1.-wgty)+ zu(k)*wgty
+            ! enddo
          endif
          zu(kts)=0.
       !---------------------------------------------------------
@@ -7378,7 +7378,7 @@ contains
             call get_cloud_bc(cumulus,ave_layer,kts,kte,ktf,xland(i),po(kts:kte,i) &
                              ,buoy_exc (kts:kte,i),x_add_buoy (i),kts)
             !- for gate soundings
-            !x_add_buoy (i) = float(JL*40)
+            x_add_buoy (i) = float(JL*40)
 
             x_add_buoy (i) = min (x_add_buoy (i), 0.5*mx_buoy2)
 

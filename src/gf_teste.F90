@@ -413,6 +413,8 @@ program  gf_test
       where (conprr < 1.e-6) conprr=-999999.
       write(l_unit,rec=irec) conprr(:,:)
 
+!print*,"zt3d",zt3d(50:60,1,1)
+
       close(l_unit)
 
       open(newunit = l_unit, file="../dataout/gf_dataOut-"//ctime//".ctl", action='write', status='replace')
@@ -423,7 +425,7 @@ program  gf_test
         write(l_unit,*) 'title GF_teste'
         write(l_unit,*) 'xdef ',mxp,' linear ',glon(1,1),glon(2,1)-glon(1,1)
         write(l_unit,*) 'ydef ',myp,' linear ',glat(1,1),glat(1,2)-glat(1,1)
-        write(l_unit,*) 'zdef ',mzp,'levels',flip
+        write(l_unit,*) 'zdef ',mzp,'levels',flip !,zt3d(1:mzp-1,1,1)
         write(l_unit,*) 'tdef 1 linear 00:00Z01JAN200 1mo'
         write(l_unit,*) 'vars ',20
         write(l_unit,*) 'thsrc',mzp,'99 ','K' 

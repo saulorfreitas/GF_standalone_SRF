@@ -1,7 +1,10 @@
 'reinit'
-'open ref_usemem0/gf_dataOut-9000.ctl'
-'open ref_usemem2/gf_dataOut-9000.ctl'
-'open   ./gf_dataOut-9000.ctl'
+*'open ref/gf_dataOut-9000.ctl'
+*'open usemM1/gf_dataOut-9000.ctl'
+'open usem0/gf_dataOut-9000.ctl'
+'open usem2/gf_dataOut-9000.ctl'
+'open usem22/gf_dataOut-9000.ctl'
+'open usem22_entr4.4/gf_dataOut-9000.ctl'
 
 dummy = colors2()
 'set display white'
@@ -31,6 +34,10 @@ icx=4
 'set ccolor 'icx''
 'set cmark 0'
 'd zup1.3'
+icx=9
+'set ccolor 'icx''
+'set cmark 0'
+'d zup1.4'
 
 'q pos'
 'clear'
@@ -48,7 +55,9 @@ icx=2
 icx=4
 'set ccolor 'icx''
 'd conprr.3'
-
+icx=9
+'set ccolor 'icx''
+'d conprr.4'
 
 return
 

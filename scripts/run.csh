@@ -1,6 +1,8 @@
 #!/bin/bash
 
-DIRHOME=/Users/saulo.freitas/work/models/GF_standalone_SRF/
+#DIRHOME=/Users/saulo.freitas/work/models/GF_standalone_SRF/
+DIRHOME=/home/sfreitas/models/GF_standalone_SRF
+
 #DIRHOME=$PWD
 SCRIPTS=${DIRHOME}/scripts
 DATAOUT=${DIRHOME}/dataout
@@ -11,6 +13,24 @@ BIN=${DIRHOME}/bin
 
 #---------------------------create the executable
 #rm -f gf.x
+# Verificando o argumento de entrada
+COMPILER=${1:-"gnu"}
+if [ -z "${1}" ]
+then
+  echo "Compiler is not set: gnu or intel or pgi"
+  echo "$COMPILER is set by default" 
+fi
+  
+echo "COMPILER=$COMPILER"
+
+cd ${BIN}
+#/bin/rm gf.x
+/bin/cp Makefile_3D Makefile
+echo "Compilando"
+#comando="make clean; make $COMPILER"
+comando="make $COMPILER"
+echo $comando; eval $comando
+
 #mk_${1}
 #
 #rm -f ref_${1}.gra
@@ -19,7 +39,7 @@ BIN=${DIRHOME}/bin
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "ref2_${1}",  
+  runname   = "ref_${1}",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
@@ -64,7 +84,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   tau_land_cp       =7200.,
   mx_buoy1          = 250.5,   ! J/kg
   mx_buoy2          = 20004.0, ! J/kg
-  use_memory        = 2,
+  use_memory        = 22,
   use_gustiness     = 0,
 
   sgs_w_timescale  = 1,     != 0/1: uses vertical velocity for determination of tau_ecmwf
@@ -156,35 +176,21 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 
 &end!-----
 
-&end
 Eof0
 #--
-
-# Verificando o argumento de entrada
-COMPILER=${1:-"gnu"}
-if [ -z "${1}" ]
-then
-  echo "Compiler is not set: gnu or intel"
-  echo "$COMPILER is set by default" 
-fi
-  
-echo "COMPILER=$COMPILER"
-
-cd ${BIN}
-/bin/rm gf.x
-/bin/cp Makefile_3D Makefile
-echo "Compilando"
-#comando="make clean; make $COMPILER"
-comando="make $COMPILER"
-echo $comando; eval $comando
 
 
 
 #-----------------------------run GF standalone
-i=''
-(cd ${DATAIN};
-$BIN/gf.x > gf.out
-#ls -ltr *ctl
+cd ${DATAIN}
+/bin/rm gf.x
+/bin/cp $BIN/gf.x .
+./gf.x > gf.out
+
+
+ls -ltr *ctl
+
+exit
 echo "compare --------"
 cmp ${DATAOUT}/ref_$i.gra ${DIRHOME}/refs/ref_g.gra
 )

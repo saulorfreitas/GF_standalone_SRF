@@ -37,7 +37,7 @@ echo $comando; eval $comando
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "CPUM22_Fy_${1}",  
+  runname   = "Check_${1}",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
@@ -119,7 +119,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   cum_HEI_DOWN_OCEAN   = 0.35, 0.0, 0.35, 
 
   use_random_num      = 0., != stochastic pertubation for the height of maximum Zu
-  use_smooth_prof     = 1,  != 1 makes the normalized mass flux, entr and detraiment profiles smoother
+  use_smooth_prof     = 0,  != 1 makes the normalized mass flux, entr and detraiment profiles smoother
   
   use_linear_subcl_mf = 1,  !-- for shallow convection only
   beta_sh             = 2.2,!-- for shallow convection only
