@@ -7378,7 +7378,7 @@ contains
             call get_cloud_bc(cumulus,ave_layer,kts,kte,ktf,xland(i),po(kts:kte,i) &
                              ,buoy_exc (kts:kte,i),x_add_buoy (i),kts)
             !- for gate soundings
-            x_add_buoy (i) = float(JL*40)
+            !x_add_buoy (i) = float(JL*40)
 
             x_add_buoy (i) = min (x_add_buoy (i), 0.5*mx_buoy2)
 
