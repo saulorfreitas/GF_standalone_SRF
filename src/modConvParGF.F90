@@ -686,9 +686,9 @@ contains
                !- wind velocities
                us      (k,i)  =  u (kr,i,j)
                vs      (k,i)  =  v (kr,i,j)
-               omeg    (k,i,:)=  w (kr,i,j)
                dm2d    (k,i)  =  dm(kr,i,j)
-               !omeg   (k,i,:)= -g*rho(kr,i,j)*w(kr,i,j)
+              !omeg    (k,i,:)=  w (kr,i,j)
+               omeg    (k,i,:)= -c_grav*rhoi(k,i)*w(kr,i,j)
                !-buoyancy excess
                buoy_exc2d(k,i)= buoy_exc(kr,i,j)
                !- temp/water vapor modified only by advection
@@ -1407,9 +1407,7 @@ contains
 
       real,    dimension (:)    ,intent (out  )  :: pre,sig,lightn_dens,var2d
       !
-      ! basic environmental input includes
-      ! omega (omeg), windspeed (us,vs), and a flag (aaeq) to turn off
-      ! convection for this call only and at that particular gridpoint
+      ! basic environmental input
       !
       real,    dimension (:,:)  ,intent (inout)  :: dhdt,rho,t,po,us,vs,tn,dm2d &
                                                    ,buoy_exc,tn_bl,tn_adv
@@ -2144,6 +2142,7 @@ contains
 
       !--- calculate cloud base mass flux
       !
+
       if(cumulus == 'deep') &
             call cup_forcing_ens_deep(itf,ktf,its,ite, kts,kte,ens4,ensdim,ichoice,maxens,maxens2,maxens3 &
                                      ,ierr,k22,kbcon,ktop,xland1,aa0,aa1,xaa0,mbdt,dtime,xf_ens,mconv,qo  &
@@ -4798,29 +4797,21 @@ contains
          !--- omeg is in pa/s
          xomg=0.
          kk=0
-         xff_ens3(4)=0.
          do k=max(kts,kbcon(i)-1),kbcon(i)+1
-            !-  betajb=(zu(k,i)-edt(i)*zd(k,i))
-            betajb=1.
-            !if(betajb .gt. 0.)then
-            xomg=xomg-omeg(k,i,1)/c_grav/betajb
+            xomg=xomg-omeg(k,i,1)/c_grav
             kk=kk+1
-            !endif
          enddo
-         if(kk.gt.0)xff_ens3(4)=xomg/float(kk) ! kg[air]/m^3 * m/s
-         xff_ens3(4) = max(0.0, xff_ens3(4))
+         xff_ens3(4) = max(0.0,xomg/float(kk)) ! kg[air]/m^3 * m/s
          xff_ens3(5) = xff_ens3(4)
          xff_ens3(6) = xff_ens3(4)
          xff_ens3(14)= xff_ens3(4)
          !
          !--- more like krishnamurti et al.;
          !
-         !mconv(i) = 0.
-         !do k=k22(i),ktop(i)
-         !    mconv(i)=mconv(i)+omeg(i,k,1)*(qo(k+1,i)-qo(k,i))/c_grav
-         !enddo
-         !- 2nd option (assuming that omeg(ktop)*q(ktop)<< omeg(kbcon)*q(kbcon))
-         mconv(i)  = -omeg(kbcon(i),i,1)*qo(kbcon(i),i)/c_grav ! (kg[air]/m^3)*m/s*kg[water]/kg[air]
+         mconv(i) = 0.
+         do k=kbcon(i),ktop(i)
+             mconv(i)=mconv(i)+omeg(i,k,1)*(qo(k+1,i)-qo(k,i))/c_grav
+         enddo
 
          mconv(i)  = max(0., mconv(i))
          xff_ens3(7) = mconv(i)

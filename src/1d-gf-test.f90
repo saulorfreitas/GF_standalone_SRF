@@ -96,11 +96,12 @@ program GF_1d_driver
    kte = mzp
    kme = mzp
    mgmzp=mzp
-
-    print *, "mxp, myp, mzp               : ", mxp, myp, mzp
-    print *, "mtp, nmp, itime1, maxiens   : ", mtp, nmp, itime1, maxiens
-    print *, "ims, ime, jms, jme, kms, kme: ", ims,ime, jms,jme, kms,kme
-    print *, "its, ite, jts, jte, kts, kte: ", its,ite, jts,jte, kts,kte
+   itime1=0000
+   
+   print *, "mxp, myp, mzp               : ", mxp, myp, mzp
+   print *, "mtp, nmp, itime1, maxiens   : ", mtp, nmp, itime1, maxiens
+   print *, "ims, ime, jms, jme, kms, kme: ", ims,ime, jms,jme, kms,kme
+   print *, "its, ite, jts, jte, kts, kte: ", its,ite, jts,jte, kts,kte
     
    allocate(flip(mzp),fscav_int(mtp))
    !
@@ -165,7 +166,7 @@ program GF_1d_driver
      	do jk=p_klev,1,-1
      	read(7,*)pgeo(jl,jk),ppres(jl,jk),ptemp(jl,jk),pq(jl,jk),pu(jl,jk),pv(jl,jk),pvervel(jl,jk), &
      		       zq1(jl,jk),zq2(jl,jk),zqr(jl,jk),zadvt(jl,jk),zadvq(jl,jk)			    
-     	!print*,"GATE=",jl,jk,pgeo(jl,jk),zadvq(jl,jk)
+     	print*,"GATE=",jl,jk,pgeo(jl,jk),pvervel(jl,jk)
      	end do
      enddo
    close(7)
@@ -184,6 +185,7 @@ program GF_1d_driver
    dm3d      = 1.
    lons      = 0.
    lats      = 0.
+   tkmin     = 1.e-4
    !
    RTGT     (:,:) = 1.     !don't change this
    aot500   (:,:) = 0.1    ! #

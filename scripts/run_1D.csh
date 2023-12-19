@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DIRHOME=/home/sfreitas/models/GF_standalone_SRF
+DIRHOME=/Users/saulo.freitas/work/models/GF_standalone_SRF
+#DIRHOME=/home/sfreitas/models/GF_standalone_SRF
 #DIRHOME=$PWD
 SCRIPTS=${DIRHOME}/scripts
 DATAOUT=${DIRHOME}/dataout_1_coluna
@@ -37,7 +38,7 @@ echo $comando; eval $comando
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "Check_${1}",  
+  runname   = "Check7_${1}",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
@@ -57,12 +58,12 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 
   icumulus_gf      = 1,0,0, != trimodal plume (deep ,shallow ,congestus)
   
-  closure_choice   = 10,10,3, != closure for the mass flux at the cloud base
+  closure_choice   = 4 ,10,3, != closure for the mass flux at the cloud base
   
   cum_entr_rate    = 6.3e-4, 1.e-3, 5.e-4, != initial gross entrainment rate for 
                                            != deep, shallow, congestus
   
-  dicycle          = 1,            != 0/1:  diurnal cycle closure, default = 1
+  dicycle          = 0,            != 0/1:  diurnal cycle closure, default = 1
 
   cum_t_star = 4., -99., -99.,     != scale temperature for 
                                    !diurnal cycle closure, 

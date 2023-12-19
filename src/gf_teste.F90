@@ -2,18 +2,18 @@ program  gf_test
    use modConvParGF, only: convParGFDriver, initModConvParGF &
                          , modConvParGF_initialized &
                          , readGFConvParNML 
-   use modGate, only: p_use_gate
+   use modGate, only: p_use_gate, runname, runlabel, rundata,klev_sound
 
    implicit none 
 
-   integer :: l_unit, icnt, int_byte_size, nz, irec, rec_size, i, iloop, nloops
+   integer :: l_unit, icnt, int_byte_size, nz, irec, rec_size, i, iloop, nloops,version
    logical :: first_read, ok, exists, init_stat
    logical :: read_GF_ConvPar_nml =.true. 
 
    real :: confrq, local_time
    character(len=4) :: ctime
    real :: real_byte_size
-
+   logical :: land
    integer :: its,ite, jts,jte, kts,kte, mynum
    integer :: mxp,myp,mzp,mtp ,nmp, itime1, maxiens
    integer :: ims,ime, jms,jme, kms,kme
@@ -54,10 +54,27 @@ program  gf_test
    real   , allocatable, dimension(:,:,:,:) :: mp_ice, mp_liq, mp_cf 
    real   , allocatable, dimension(:,:,:,:) :: sub_mpqi, sub_mpql, sub_mpcf
 
+
+   !--- for output only
+   real   , allocatable, dimension(:)       :: zup1d, zdn1d
+   real   , allocatable, dimension(:)       :: dd_massdetr1d, dd_massentr1d
+   real   , allocatable, dimension(:)       :: up_massdetr1d, up_massentr1d
+   real   , allocatable, dimension(:)       :: thsrc1d, rtsrc1d, clsrc1d, &
+                                               nlsrc1d, nisrc1d, usrc1d,vsrc1d, src_buoy1d
+   real :: conprr0d,wlpool0d
+   real :: number_ave
+   integer :: i_ave, j_ave, iplume, k
+   !- this for the namelist gf.inp
+   namelist /run/ runname, runlabel, rundata,version, land , klev_sound 
+
    mynum = 1
    p_use_gate = .false.
-
    nloops = 1
+
+  !- reads namelist
+   open(15,file='gf.inp',status='old',form='formatted')    
+    read(15,nml=run)
+   close(15)
 
    IF(read_GF_ConvPar_nml) THEN
       modConvParGF_initialized = .false.
@@ -136,6 +153,12 @@ program  gf_test
          allocate(src_chem(mtp,mzp,mxp,myp), tracer(mxp,myp,mzp,mtp))
          allocate(mp_ice(nmp,mzp,mxp,myp), mp_liq(nmp,mzp,mxp,myp), mp_cf(nmp,mzp,mxp,myp))
          allocate(sub_mpqi(nmp,mzp,mxp,myp), sub_mpql(nmp,mzp,mxp,myp), sub_mpcf(nmp,mzp,mxp,myp))
+      
+         allocate(zup1d(mzp), zdn1d(mzp), dd_massdetr1d(mzp), dd_massentr1d(mzp) &
+                 , up_massdetr1d(mzp), up_massentr1d(mzp)      &
+                 , thsrc1d(mzp), rtsrc1d(mzp), clsrc1d(mzp)         &
+                 , nlsrc1d(mzp), nisrc1d(mzp), usrc1d(mzp),vsrc1d(mzp), src_buoy1d(mzp))
+ 
       endif
 
       read(l_unit) flip
@@ -354,7 +377,7 @@ program  gf_test
 
       rec_size = mxp*myp*4
       ! print *, rec_size
-      open(newunit = l_unit, file="../dataout/gf_dataOut-"//ctime//".gra", form='unformatted', &
+      open(newunit = l_unit, file="../dataout/gf_dataOut-"//trim(runname)//"-"//ctime//".gra", form='unformatted', &
                access='direct', status='replace', recl=rec_size)
       irec=1
       do nz=1,mzp
@@ -417,9 +440,9 @@ program  gf_test
 
       close(l_unit)
 
-      open(newunit = l_unit, file="../dataout/gf_dataOut-"//ctime//".ctl", action='write', status='replace')
+      open(newunit = l_unit, file="../dataout/gf_dataOut-"//trim(runname)//"-"//ctime//".ctl", action='write', status='replace')
 
-        write(l_unit,*) 'dset ^'//"gf_dataOut-"//ctime//".gra"
+        write(l_unit,*) 'dset ^'//"gf_dataOut-"//trim(runname)//"-"//ctime//".gra"
         !writing others infos to ctl
         write(l_unit,*) 'undef -999999.'
         write(l_unit,*) 'title GF_teste'
@@ -451,9 +474,119 @@ program  gf_test
         write(l_unit,*) 'endvars'
         close(l_unit)
 
+         
+        !-- grid average output
+
+        number_ave = 0.0
+        do j_ave=1,myp
+           do i_ave=1,mxp
+             if(conprr(i_ave,j_ave) > 1.e-6) & 
+               number_ave = number_ave + 1.
+           enddo
+        enddo
+          
+        iplume = 1  
+        do k=1,mzp
+         zup1d(k)=        sum(zup5d_tmp        (k,:,:,iplume),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         zdn1d(k)=        sum(zdn5d_tmp        (k,:,:,iplume),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         dd_massdetr1d(k)=sum(dd_massdetr5d_tmp(k,:,:,iplume),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         dd_massentr1d(k)=sum(dd_massentr5d_tmp(k,:,:,iplume),MASK=conprr(:,:) > 1.e-6)/ number_ave 
+         up_massdetr1d(k)=sum(up_massdetr5d_tmp(k,:,:,iplume),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         up_massentr1d(k)=sum(up_massentr5d_tmp(k,:,:,iplume),MASK=conprr(:,:) > 1.e-6)/ number_ave        
+         thsrc1d(k)=      sum(thsrc   (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         rtsrc1d(k)=      sum(rtsrc   (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         clsrc1d(k)=      sum(clsrc   (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave   
+         nlsrc1d(k)=      sum(nlsrc   (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         nisrc1d(k)=      sum(nisrc   (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         usrc1d (k)=      sum(usrc    (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         vsrc1d (k)=      sum(vsrc    (k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+         src_buoy1d(k)=   sum(src_buoy(k,:,:),MASK=conprr(:,:) > 1.e-6)/ number_ave
+        enddo  
+        conprr0d=sum(conprr(:,:),MASK=conprr(:,:) > 1.e-6)/number_ave
+        print*,'average precip=',conprr0d
+
+        rec_size = 4
+        open(newunit = l_unit, file="../dataout/1d_gf_dataOut-"//trim(runname)//"-"//ctime//".gra", form='unformatted', &
+               access='direct', status='replace', recl=rec_size)
+          irec=1 
+          call write1d(l_unit,mzp,irec,thsrc1d,86400.)
+          call write1d(l_unit,mzp,irec,usrc1d,86400.)
+          call write1d(l_unit,mzp,irec,vsrc1d,86400.)
+
+          call write1d(l_unit,mzp,irec,rtsrc1d,86400.*1000.)
+          call write1d(l_unit,mzp,irec,clsrc1d,86400.*1000.)
+          call write1d(l_unit,mzp,irec,src_buoy1d,86400.)
+
+          call write1d(l_unit,mzp,irec,zup1d,1.)
+          call write1d(l_unit,mzp,irec,zdn1d,1.)
+
+          call write1d(l_unit,mzp,irec,dd_massdetr1d,1000.)
+          call write1d(l_unit,mzp,irec,up_massdetr1d,1000.)
+          call write1d(l_unit,mzp,irec,dd_massentr1d,1000.)
+          call write1d(l_unit,mzp,irec,up_massentr1d,1000.)
+          call write0d(l_unit,mzp ,irec,conprr0d,1.)
+
+        close(l_unit)
+
+        open(newunit = l_unit, file="../dataout/1d_gf_dataOut-"//trim(runname)//"-"//ctime//".ctl", action='write', status='replace')
+
+         write(l_unit,*) 'dset ^'//"1d_gf_dataOut-"//trim(runname)//"-"//ctime//".gra"
+         write(l_unit,*) 'undef -999999.'
+         write(l_unit,*) 'title GF_teste'
+         write(l_unit,*) 'xdef ',1,' linear ',glon(1,1),glon(2,1)-glon(1,1)
+         write(l_unit,*) 'ydef ',1,' linear ',glat(1,1),glat(1,2)-glat(1,1)
+         write(l_unit,*) 'zdef ',mzp,'levels',int(zt3d(1:mzp-1,1,1)), int(zt3d(mzp-1,1,1))+750
+         write(l_unit,*) 'tdef 1 linear 00:00Z01JAN200 1mo'
+         write(l_unit,*) 'vars ',13
+         write(l_unit,*) 'thsrc',mzp,'99 ','K' 
+         write(l_unit,*) 'usrc ',mzp,'99 ','K'
+         write(l_unit,*) 'vsrc ',mzp,'99 ','K'
+         write(l_unit,*) 'rtsrc',mzp,'99 ','K' 
+         write(l_unit,*) 'clsrc',mzp,'99 ','K'
+         write(l_unit,*) 'betax',mzp,'99 ','K'
+         ! write(l_unit,*) 'press',mzp,'99 ','mbar'
+         write(l_unit,*) 'zup1 ',mzp,'99 ','#'
+         write(l_unit,*) 'zdn1 ',mzp,'99 ','#'
+         write(l_unit,*) 'ddn1 ',mzp,'99 ','#'
+         write(l_unit,*) 'dup1 ',mzp,'99 ','#'
+         write(l_unit,*) 'edn1 ',mzp,'99 ','#'
+         write(l_unit,*) 'eup1 ',mzp,'99 ','#'
+        ! write(l_unit,*) 'dup1 ',mzp,'99 ','#'
+        ! write(l_unit,*) 'dup2 ',mzp,'99 ','#'
+        ! write(l_unit,*) 'dup3 ',mzp,'99 ','#'
+        ! write(l_unit,*) 'ktop1  ','01',' 99 ','#'
+        ! write(l_unit,*) 'ktop2  ','01',' 99 ','#'
+        ! write(l_unit,*) 'ktop3  ','01',' 99 ','#'
+         write(l_unit,*) 'conprr ',mzp,' 99 ','mm'
+         write(l_unit,*) 'endvars'
+        close(l_unit)
+
    end do
 
-
-
-
 end program gf_test
+!--
+subroutine write1d(l_unit,mzp,irec,a,b)
+ implicit none
+ real :: a(mzp),b
+ integer, intent(in)    :: l_unit,mzp
+ integer, intent(inout) :: irec
+
+ integer :: nz
+   do nz=1,mzp
+     write(l_unit,rec=irec) a(nz)*b
+     irec = irec + 1
+   enddo
+end subroutine write1d
+!--
+subroutine write0d(l_unit,mzp,irec,a,b)
+ implicit none
+ real :: a,b
+ integer, intent(in)    :: l_unit,mzp
+ integer, intent(inout) :: irec
+
+ integer :: nz
+   do nz=1,mzp
+     write(l_unit,rec=irec) a*b
+     irec = irec + 1
+   enddo
+end subroutine write0d
