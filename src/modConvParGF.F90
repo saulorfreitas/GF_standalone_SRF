@@ -687,7 +687,6 @@ contains
                us      (k,i)  =  u (kr,i,j)
                vs      (k,i)  =  v (kr,i,j)
                dm2d    (k,i)  =  dm(kr,i,j)
-              !omeg    (k,i,:)=  w (kr,i,j)
                omeg    (k,i,:)= -c_grav*rhoi(k,i)*w(kr,i,j)
                !-buoyancy excess
                buoy_exc2d(k,i)= buoy_exc(kr,i,j)
@@ -3544,7 +3543,6 @@ contains
             aa_1=(c_grav/(c_cp*((t_cup(k,i  )))))*dby(k,i  )/(1.+gamma_cup(k,i  ))*zu(k,i)
             aa_2=(c_grav/(c_cp*((t_cup(k+1,i)))))*dby(k+1,i)/(1.+gamma_cup(k+1,i))*zu(k+1,i)
             da=0.5*(aa_1+aa_2)*dz
-
             aa1_fa(i)=aa1_fa(i)+da
          enddo
       enddo
@@ -3574,7 +3572,7 @@ contains
       integer, parameter :: SMOOTH_DEPTH  = 2 ! -- increasing this parameter,
                                               ! -- strongly damps the heat/drying rates, precip ...
       integer ::  incr1=1, incr2=1, nlay, k_ent
-      !real:: max_entr_rate = 3.e-3, x1,x2
+
       !---
       SMOOTH = .false.
       if(USE_SMOOTH_PROF == 1)  SMOOTH = .true.
@@ -3613,18 +3611,6 @@ contains
             !-- check limits of allowed entrainment rates 
             up_massentro(k,i)=max(up_massentro(k,i),min_entr_rate*dz*zuo_ave)
             
-!xxxxxxxxxx
-!             x1 = up_massentro(k,i)
-!             x2 = up_massentro(k,i)/(dz*zuo_ave)
-!             if (x2 > 100000*max_entr_rate) then 
-!               zuo(k+1,i) = zuo(k,i) + zuo_ave*dz*(max_entr_rate-cd(k,i))
-!               zuo_ave = 0.5*(zuo(k+1,i)+zuo(k,i))
-!               up_massdetro(k,i)=cd(k,i)*dz*zuo_ave
-!               up_massentro(k,i)=zuo(k+1,i)-zuo(k,i)+up_massdetro(k,i)
-!               entr_rate_2d(k,i)=up_massentro(k,i)/(dz*zuo_ave)
-!               !print*,"ent2",k,entr_rate_2d(k,i)*1000.,x2*1000,up_massentro(k,i)*1000
-!             endif
-!xxxxxxxxxx       
 
             !-- check up_massdetro in case of up_massentro has been changed above
             up_massdetro(k,i)=-zuo(k+1,i)+zuo(k,i)+up_massentro(k,i)
@@ -3639,8 +3625,6 @@ contains
          do k=k_ent+1,ktop(i)-1
             entr_rate_2d(k,i)=entr_rate_2d(k_ent,i)*(min(zo_cup(k_ent,i)/zo_cup(k,i),1.))
             entr_rate_2d(k,i)=max(min_entr_rate, entr_rate_2d(k,i))
-           !entr_rate_2d(k,i)=min(max_entr_rate, entr_rate_2d(k,i))
-          !if(draft=='shallow')print*,"ent2=",k,real(entr_rate_2d(k,i),4),real((min(zo_cup(i,k_ent)/zo_cup(k,i),1.)))
          enddo
          entr_rate_2d(ktop(i):kte,i)=0.
 
@@ -4631,7 +4615,6 @@ contains
       do vtp_index = get_num_elements(vec_ok),1,-1
          i = get_data_value(vec_ok,vtp_index)
          xmbmax(i)=100.*(po_cup(kbcon(i),i)-po_cup(kbcon(i)+1,i))/(c_grav*dtime)
-         !print*,"xmb",xmb(i),xf_coldpool(i),xmbmax(i)
          xmb(i) = min(xmb(i),xmbmax(i))
       enddo
 
@@ -4810,7 +4793,7 @@ contains
          !
          mconv(i) = 0.
          do k=kbcon(i),ktop(i)
-             mconv(i)=mconv(i)+omeg(i,k,1)*(qo(k+1,i)-qo(k,i))/c_grav
+             mconv(i)=mconv(i)+omeg(k,i,1)*(qo(k+1,i)-qo(k,i))/c_grav
          enddo
 
          mconv(i)  = max(0., mconv(i))

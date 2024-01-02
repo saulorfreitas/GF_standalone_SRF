@@ -1,6 +1,6 @@
 
  &run
-  runname   = "cntrOFF",  
+  runname   = "check_IK2",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,

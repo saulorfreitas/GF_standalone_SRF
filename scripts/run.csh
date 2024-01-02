@@ -25,6 +25,7 @@ echo "COMPILER=$COMPILER"
 
 cd ${BIN}
 #/bin/rm gf.x
+make clean
 /bin/cp Makefile_3D Makefile
 echo "Compilando"
 #comando="make clean; make $COMPILER"
@@ -39,7 +40,7 @@ echo $comando; eval $comando
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "cntrOFF",  
+  runname   = "check_IK2",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
@@ -57,7 +58,7 @@ Eof1
 cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 &GF_NML  
   output_sound     = 2,
-  icumulus_gf      = 1,0,0, != trimodal plume (deep ,shallow ,congestus)
+  icumulus_gf      = 1,1,1, != trimodal plume (deep ,shallow ,congestus)
   
   closure_choice   = 10,10,3, != closure for the mass flux at the cloud base
   
@@ -74,7 +75,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   use_scale_dep    = 1,     != 0/1: turn ON/OFF the scale dependence approach
   sig_factor       = 0.22,  != exponential factor for the sigma determination (orig = 0.1)
 
-  convection_tracer = 0,
+  convection_tracer = 1,
   add_coldpool_prop = 3,
   add_coldpool_clos = 0,
   add_coldpool_trig = 2,
