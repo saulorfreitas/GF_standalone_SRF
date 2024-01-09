@@ -19,7 +19,7 @@
 
   convection_tracer = 1,
   add_coldpool_prop = 3,
-  add_coldpool_clos = 0,
+  add_coldpool_clos = 1,
   add_coldpool_trig = 2,
   add_coldpool_diff = 3,
 

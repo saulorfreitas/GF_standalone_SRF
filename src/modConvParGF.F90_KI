@@ -87,6 +87,8 @@ module modConvParGF
    use modVector, only: get_num_elements, get_data_value, init, insert_range, remove &
                        ,free_memory, vector_t, insert_unique
 
+   !use module_mp_wsm3, only: WSM3_GF
+   
    implicit none
 
    private
@@ -1860,20 +1862,22 @@ contains
       !
       !---gust front impact on removal instabil time-scale and trigger function based on KE > CIN
       !
-      if(convection_tracer == 1 .and. sgs_w_timescale == 1 ) then 
-             wlpool_bcon  (:) = wlpool(:)
-             ke_gustfront (:) = 0.5 * max(wlpool_bcon(:)**2,  zws(:)**2) + 1.e-6
-            
-            if( add_coldpool_trig == 2 .and. cumulus == 'deep')then
+      if(convection_tracer == 1) then 
+            wlpool_bcon  (:) = wlpool(:)
+            ke_gustfront (:) = 0.5 * max(wlpool_bcon(:)**2,  zws(:)**2) + 1.e-6
+            if(cumulus == 'deep')then
                call cup_up_aa0(cin1,zo_cup,zuo,dbyo ,GAMMAo_CUP   ,tn_cup  ,k22,klcl,kbcon,ktop &
                               ,ierr,itf,ktf,its,ite, kts,kte,'CIN')
-               do vtp_index = get_num_elements(vec_ok),1,-1
-                  i = get_data_value(vec_ok,vtp_index)
-                  if (ke_gustfront(i) < abs( min(cin1(i), 0.))) then
-                      ierr(i)=500; is_removed = remove(vec_ok, i)
-                      ierrc(i)="ke_gustfront less than -cin1"
-                  endif 
-               enddo
+            
+               if( add_coldpool_trig == 2)then
+                  do vtp_index = get_num_elements(vec_ok),1,-1
+                      i = get_data_value(vec_ok,vtp_index)
+                      if (ke_gustfront(i) < abs( min(cin1(i), 0.))) then
+                        ierr(i)=500; is_removed = remove(vec_ok, i)
+                        ierrc(i)="ke_gustfront less than -cin1"
+                      endif 
+                  enddo
+               endif
             endif 
       endif
       !
@@ -2146,7 +2150,7 @@ contains
             call cup_forcing_ens_deep(itf,ktf,its,ite, kts,kte,ens4,ensdim,ichoice,maxens,maxens2,maxens3 &
                                      ,ierr,k22,kbcon,ktop,xland1,aa0,aa1,xaa0,mbdt,dtime,xf_ens,mconv,qo  &
                                      ,po_cup,omeg,zdo,zuo,pr_ens,edto,tau_ecmwf,aa1_bl,xf_dicycle, xk_x   &
-                                     ,alpha_adv,Q_adv,aa1_radpbl,aa1_adv,wlpool_bcon,xf_coldpool,sig)
+                                     ,alpha_adv,Q_adv,aa1_radpbl,aa1_adv,wlpool_bcon,xf_coldpool,cin1     )
 
       if(cumulus == 'mid') &
             call cup_forcing_ens_mid(aa0,aa1,xaa0,mbdt,dtime,ierr ,po_cup,ktop,k22,kbcon,kpbl,ichoice    &
@@ -4701,7 +4705,7 @@ contains
                                   ,maxens2,maxens3,ierr,k22,kbcon,ktop,xland,aa0,aa1,xaa0      &
                                   ,mbdt,dtime,xf_ens,mconv,qo,p_cup,omeg,zd,zu,pr_ens,edt      &
                                   ,tau_ecmwf,aa1_bl,xf_dicycle,xk_x,alpha_adv,Q_adv,aa1_radpbl &
-                                  ,aa1_adv,wlpool,xf_coldpool,sig)
+                                  ,aa1_adv,wlpool,xf_coldpool,cin1)
 
       implicit none
       integer  ,intent (in   ) :: itf,ktf,its,ite, kts,kte,ens4
@@ -4733,7 +4737,6 @@ contains
       real,    dimension (:,:)    ,intent (in   )  :: zd,zu,p_cup,qo
       real,    dimension (:,:,:)  ,intent (in   )  :: omeg
       real,    dimension (:)      ,intent (in   )  :: xaa0
-      real,    dimension (:)      ,intent (in   )  :: sig
       real,    dimension (:)      ,intent (in   )  :: aa1,edt,xland
       real,    dimension (:)      ,intent (inout)  :: mconv
       real,    dimension (:)      ,intent (in   )  :: aa0
@@ -4744,22 +4747,20 @@ contains
       integer                     ,intent (in   )  :: ichoice
 
       real,    dimension (:)      ,intent(in)      :: aa1_bl,tau_ecmwf,alpha_adv&
-                                                     ,Q_adv,aa1_radpbl,aa1_adv,wlpool
+                                                     ,Q_adv,aa1_radpbl,aa1_adv,wlpool &
+                                                     ,cin1
       real,    dimension (:)      ,intent(inout)   :: xf_dicycle,xk_x,xf_coldpool
      
       !
       !  local variables in this routine
       !
-      real  :: xff_dicycle
-      real,    dimension (1:maxens3)      :: xff_ens3
-      real,    dimension (its:ite)        :: xk
-      integer                             :: i,k,nall,n,ne,nens,nens3,vtp_index
-      real                                :: a1,a_ave,xff0,xomg
-      real                                :: betajb,ke,fractional_area
-      integer                             :: kk
-      real, dimension (its:ite)           :: ens_adj
-      real, parameter                     :: air_dens = 1.1 ! estimation of air density at 
-                                                            ! cold pool leading edge 
+      integer                          :: i,k,kk,nall,n,ne,nens,nens3,vtp_index
+      real                             :: xff_dicycle
+      real                             :: a1,a_ave,xff0,xomg,KE_gf,W_cb
+      real, parameter                  :: c1 = 0.06, c2 = 1., c3 = 0.28,  c4 = 0.64 
+      real, dimension (1:maxens3)      :: xff_ens3
+      real, dimension (its:ite)        :: xk
+      real, dimension (its:ite)        :: ens_adj
       !
       ens_adj(:)=1.
       xf_ens(:,1:16)= 0.
@@ -4915,8 +4916,9 @@ contains
          if(add_coldpool_clos == 1 )then
             do vtp_index = get_num_elements(vec_ok),1,-1
                i = get_data_value(vec_ok,vtp_index)
-               fractional_area = sqrt (1.- sig(i)*sig(i))
-               xf_coldpool(i) = air_dens*fractional_area*wlpool(i)
+               ke_gf = 0.5*wlpool(i)**2
+               w_cb = c3*sqrt(ke_gf) + c4
+               xf_coldpool(i) = c1 * w_cb * exp (-c2* abs(min(cin1(i),0.))/ke_gf)
             enddo
          endif
          if(add_coldpool_clos == 2 )then

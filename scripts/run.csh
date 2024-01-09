@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DIRHOME=/Users/saulo.freitas/work/models/GF_standalone_SRF/
-#DIRHOME=/home/sfreitas/models/GF_standalone_SRF
+#DIRHOME=/Users/saulo.freitas/work/models/GF_standalone_SRF/
+DIRHOME=/home/sfreitas/models/GF_standalone_SRF
 
 #DIRHOME=$PWD
 SCRIPTS=${DIRHOME}/scripts
@@ -40,7 +40,7 @@ echo $comando; eval $comando
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "check_IK2",  
+  runname   = "closW_on_KI",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
@@ -77,7 +77,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
 
   convection_tracer = 1,
   add_coldpool_prop = 3,
-  add_coldpool_clos = 0,
+  add_coldpool_clos = 1,
   add_coldpool_trig = 2,
   add_coldpool_diff = 3,
 
