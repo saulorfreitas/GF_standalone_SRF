@@ -4757,7 +4757,7 @@ contains
       integer                          :: i,k,kk,nall,n,ne,nens,nens3,vtp_index
       real                             :: xff_dicycle
       real                             :: a1,a_ave,xff0,xomg,KE_gf,W_cb
-      real, parameter                  :: c1 = 0.06, c2 = 1., c3 = 0.28,  c4 = 0.64 
+      real, parameter                  :: c1 = 0.06, c2 = 1., c3 = 0.28,  c4 = 0.0 !0.64 
       real, dimension (1:maxens3)      :: xff_ens3
       real, dimension (its:ite)        :: xk
       real, dimension (its:ite)        :: ens_adj
@@ -4916,10 +4916,12 @@ contains
          if(add_coldpool_clos == 1 )then
             do vtp_index = get_num_elements(vec_ok),1,-1
                i = get_data_value(vec_ok,vtp_index)
-               ke_gf = 0.5*wlpool(i)**2
+               ke_gf = 0.5*wlpool(i)**2 + 1.0e-6
                w_cb = c3*sqrt(ke_gf) + c4
                xf_coldpool(i) = c1 * w_cb * exp (-c2* abs(min(cin1(i),0.))/ke_gf)
             enddo
+            !if(maxval(xf_coldpool) > 0.1) print*,'xf_coldpool',maxval(xf_coldpool)
+
          endif
          if(add_coldpool_clos == 2 )then
             do vtp_index = get_num_elements(vec_ok),1,-1
