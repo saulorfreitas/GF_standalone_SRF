@@ -35,7 +35,7 @@ program  gf_test
    real   , allocatable, dimension(:,:)     :: aa1_bl,aa1_cin,tau_bl,tau_ec
    real   , allocatable, dimension(:,:)     :: wlpool, aa1_adv, aa1_radpbl
    !-- 3d
-   real   , allocatable, dimension(:,:,:)   :: qexcp, hexcp 
+   real   , allocatable, dimension(:,:,:)   :: qexcp, hexcp, cnvcf 
    real   , allocatable, dimension(:,:,:)   :: advf_t, sgsf_t, sgsf_q, thsrc, rtsrc
    real   , allocatable, dimension(:,:,:)   :: clsrc, nlsrc, nisrc, usrc, vsrc, src_buoy
    real   , allocatable, dimension(:,:,:)   :: revsu_gf, prfil_gf,var3d_agf
@@ -138,7 +138,7 @@ program  gf_test
          allocate(var3d_bgf(mzp,mxp,myp),var3d_cgf(mzp,mxp,myp),var3d_dgf(mzp,mxp,myp))
          allocate(zm3d(mzp,mxp,myp), zt3d(mzp,mxp,myp), dm3d(mzp,mxp,myp), up(mzp,mxp,myp), vp(mzp,mxp,myp), wp(mzp,mxp,myp))
          allocate(temp(mzp,mxp,myp), press(mzp,mxp,myp), rvap(mzp,mxp,myp), buoy_exc(mzp,mxp,myp), gsf_t(mzp,mxp,myp), gsf_q(mzp,mxp,myp))
-         allocate(qexcp(mzp,mxp,myp),hexcp(mzp,mxp,myp))
+         allocate(qexcp(mzp,mxp,myp),hexcp(mzp,mxp,myp), cnvcf(mzp,mxp,myp))
 
          allocate(cprr4d_tmp(mxp,myp,maxiens), xmb4d_tmp(mxp,myp,maxiens), edt4d_tmp(mxp,myp,maxiens))
          allocate(pwav4d_tmp(mxp,myp,maxiens), sigma4d_tmp(mxp,myp,maxiens))
@@ -182,7 +182,8 @@ program  gf_test
       read(l_unit) sflux_r 
       read(l_unit) sflux_t 
       read(l_unit) qexcp   
-      read(l_unit) hexcp   
+      read(l_unit) hexcp
+      read(l_unit) cnvcf
       read(l_unit) wlpool   
 
       read(l_unit) tke_pbl               
@@ -297,6 +298,7 @@ program  gf_test
                        ,rvap   &
 		                 !--- atmos composition state
                        ,TRACER   & !- note: uses GEOS-5 data structure
+                       ,cnvcf    &
                        !---- forcings---
                        ,buoy_exc &
 		                 , gsf_t   & ! forcing for theta adv+rad

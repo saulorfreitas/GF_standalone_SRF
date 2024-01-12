@@ -111,7 +111,7 @@ module modConvParGF
       ,sig_factor,lcl_trigger, rh_dicycle, add_coldpool_prop             &
       ,add_coldpool_clos,add_coldpool_trig,mx_buoy1, mx_buoy2, cum_t_star&
       ,add_coldpool_diff,n_cldrop,use_gustiness, use_random_num          &
-      ,dcape_threshold,modConvParGF_initialized
+      ,dcape_threshold,modConvParGF_initialized,use_pass_cloudvol
 
    public convParGFDriver,makeDropletNumber ,makeIceNumber,FractLiqF    &
       ,coldPoolStart, readGFConvParNML, initModConvParGF    
@@ -153,6 +153,7 @@ module modConvParGF
                                                 !,1.0e-3  & !shallow
                                                 !,5.0e-4  & !mid
                                                 !/)
+   integer :: use_pass_cloudvol != 0/1     - default 1
 
    integer :: use_tracer_transp != 0/1     - default 1
 
@@ -376,8 +377,7 @@ contains
                            ,mp_cf                 &
                            ,curr_rvap             &
                            ,TRACER                &!-note: uses GEOS-5 data structure
-
-                           !---- forcings---
+                           ,cnvcf                 & ! conv cloud fraction                           !---- forcings---
                            ,buoy_exc              &
                            ,rthften               &! gsf_t
                            ,rqvften               &! gsf_q
@@ -458,6 +458,7 @@ contains
          dm,        &
          curr_rvap, &
          buoy_exc,  &
+         cnvcf,     &
          qexcp,     &
          hexcp 
 
@@ -563,7 +564,7 @@ contains
          ,temp_new_bl,qv_new_bl,dm2d,temp_tendqv,qv_curr   &
          ,buoy_exc2d,revsu_gf_2d,prfil_gf_2d,var3d_agf_2d  &
          ,var3d_bgf_2d,temp_new,qv_new,tpert_2d            &
-         ,temp_new_adv,qv_new_adv
+         ,temp_new_adv,qv_new_adv,cnvcf2d
 
       real,   dimension (its:ite,kts:kte,maxiens) ::       &
          outt,outq,outqc,outu,outv,outbuoy,outnliq,outnice
@@ -684,6 +685,9 @@ contains
                rhoi    (i,k)  = 1.e2*po (i,k)/( 287.04*temp_old(i,k)*(1.+0.608*qv_old(i,k)))
                tkeg    (i,k)  = 1.e-5
                rcpg    (i,k)  = 0.
+               
+               !- cloud fraction 
+               cnvcf2d  (i,k)   =  cnvcf(kr,i,j)
 
                !- wind velocities
                us      (i,k)  =  u (kr,i,j)
@@ -1068,6 +1072,7 @@ contains
                         ,zws                              &
                         ,dhdt                             &
                         ,buoy_exc2d                       &
+                        ,cnvcf2d                          &                       
                         ,mpqi                             &
                         ,mpql                             &
                         ,mpcf                             &
@@ -1336,6 +1341,7 @@ contains
                      ,zws               &
                      ,dhdt              &
                      ,buoy_exc          &
+                     ,cnvcf             &
                      ,mpqi              &
                      ,mpql              &
                      ,mpcf              &
@@ -1411,7 +1417,7 @@ contains
       ! basic environmental input
       !
       real,    dimension (:,:)  ,intent (inout)  :: dhdt,rho,t,po,us,vs,tn,dm2d &
-                                                   ,buoy_exc,tn_bl,tn_adv
+                                                   ,buoy_exc,tn_bl,tn_adv,cnvcf
       
       real,    dimension (:,:,:),intent (inout)  :: omeg
       real,    dimension (:,:)  ,intent (inout)  :: q,qo,Tpert,qo_bl,qo_adv
@@ -1737,7 +1743,7 @@ contains
       !--- and the scale dependence factor (sig).
       !
       call set_entr_detr_rates(cumulus,its,ite,itf,kts,kte,ktf,ierr,klcl,min_entr_rate,entr_rate &
-                              ,entr_rate_2d,cd,mentrd_rate,cdd,qo_cup, qeso_cup)
+                              ,entr_rate_2d,cd,mentrd_rate,cdd,qo_cup, qeso_cup, cnvcf)
       !
       !
       !--- determine the moist static energy of air parcels at source level
@@ -4779,7 +4785,7 @@ contains
       integer                          :: i,k,kk,nall,n,ne,nens,nens3,vtp_index
       real                             :: xff_dicycle
       real                             :: a1,a_ave,xff0,xomg,KE_gf,W_cb
-      real, parameter                  :: c1 = 0.06, c2 = 1., c3 = 0.28,  c4 = 0.64 
+      real, parameter                  :: c1 = 0.06, c2 = 1., c3 = 0.28,  c4 = 0.0 !0.64 
       real, dimension (1:maxens3)      :: xff_ens3
       real, dimension (its:ite)        :: xk
       real, dimension (its:ite)        :: ens_adj
@@ -4938,11 +4944,13 @@ contains
          if(add_coldpool_clos == 1 )then
             do vtp_index = get_num_elements(vec_ok),1,-1
                i = get_data_value(vec_ok,vtp_index)
-               ke_gf = 0.5*wlpool(i)**2
+               ke_gf = 0.5*wlpool(i)**2 + 1.0e-6
                w_cb = c3*sqrt(ke_gf) + c4
                xf_coldpool(i) = c1 * w_cb * exp (-c2* abs(min(cin1(i),0.))/ke_gf)
             enddo
          endif
+         !if(maxval(xf_coldpool) > 0.1) print*,'xf_coldpool',maxval(xf_coldpool)
+         
          if(add_coldpool_clos == 2 )then
             do vtp_index = get_num_elements(vec_ok),1,-1
                i = get_data_value(vec_ok,vtp_index)
@@ -6819,7 +6827,8 @@ contains
          ,cap_maxs,sig_factor,cum_fadj_massflx,lcl_trigger       &
          ,rh_dicycle,cum_t_star, convection_tracer, tau_ocea_cp, tau_land_cp      &
          ,use_memory, add_coldpool_prop ,mx_buoy1, mx_buoy2,max_tq_tend           &
-         ,add_coldpool_clos,add_coldpool_trig,add_coldpool_diff,n_cldrop,output_sound
+         ,add_coldpool_clos,add_coldpool_trig,add_coldpool_diff,n_cldrop,output_sound&
+         ,use_pass_cloudvol
 
       inquire (file = trim (fn_nml), exist = exists)
       if (.not. exists) then
@@ -6860,7 +6869,8 @@ contains
          print*, 'mx_buoy1 - kJ/kg   ' , mx_buoy1*1.e-3
          print*, 'mx_buoy2 - kJ/kg   ' , mx_buoy2*1.e-3
          print*, 'use_memory         ' , use_memory
-         
+         print*, 'use_pass_cloudvol  ' , use_pass_cloudvol
+
          print*,'!--- controls rainfall evaporation'
          print*, 'use_rebcb          ' , use_rebcb
          print*, 'downdraft          ' , downdraft
@@ -7983,26 +7993,43 @@ contains
    !---------------------------------------------------------------------------------------------------
    subroutine set_entr_detr_rates(cumulus,its,ite,itf,kts,kte,ktf,ierr,klcl&
                                  ,min_entr_rate,entr_rate,entr_rate_2d,cd,mentrd_rate,cdd&
-                                 ,qo_cup, qeso_cup)
+                                 ,qo_cup, qeso_cup, cnvcf)
       implicit none
       character *(*)   ,intent (in) :: cumulus  
       integer  ,intent (in )                 :: its,ite,itf,kts,kte,ktf
       integer  ,intent (in ), dimension(:)   :: ierr, klcl
       real     ,intent (in )                 :: min_entr_rate
       real     ,intent (in ), dimension(:)   :: entr_rate
-      real     ,intent (in ), dimension(:,:) :: qo_cup, qeso_cup
+      real     ,intent (in ), dimension(:,:) :: qo_cup, qeso_cup,cnvcf
 
       real     ,intent (out), dimension(:)   :: mentrd_rate
       real     ,intent (out), dimension(:,:) :: entr_rate_2d ,cd, cdd
 
       !-- local vars
       integer :: i,k,vtp_index
-      real :: frh 
-      
+      real, parameter :: crh1 = 1.3
+      real, dimension(its:ite,kts:kte) :: frh2d
+
       do i=its,itf
         entr_rate_2d(i,:) = entr_rate  (i)
         cd          (i,:) = entr_rate  (i)
       enddo
+      !
+      !-- get the environmental relative humidity
+      do vtp_index = get_num_elements(vec_ok),1,-1
+         i = get_data_value(vec_ok,vtp_index)
+         frh2d(i,:) = min(qo_cup(i,:)/qeso_cup(i,:),1.)
+      enddo
+      
+      if(cumulus /= 'shallow' .and. use_pass_cloudvol == 1) then
+         !-- The Role of Passive Cloud Volumes in the Transition 
+         !-- From Shallow to Deep Atmospheric Convection - GRL 2023
+         do vtp_index = get_num_elements(vec_ok),1,-1
+               i = get_data_value(vec_ok,vtp_index)
+               !--effective RH =   environmental           + saturated 
+               frh2d(i,:) = (1. - cnvcf(i,:)) * frh2d(i,:) + cnvcf(i,:)*1.0 
+         enddo
+      endif
 
       !do i=its,itf
       !   if(ierr(i) /= 0) cycle
@@ -8012,13 +8039,12 @@ contains
          if(cumulus /= 'shallow') then
 
             do k=kts,ktf
-               frh = min(qo_cup(i,k)/qeso_cup(i,k),1.)
 
                if(k >= klcl(i)) then
-                    !entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh)*(qeso_cup(i,k)/qeso_cup(i,klcl(i)))**3
-                     entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh)*(qeso_cup(i,k)/qeso_cup(i,klcl(i)))**1.25
+                    !entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh2d(i,k))*(qeso_cup(i,k)/qeso_cup(i,klcl(i)))**3
+                     entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh2d(i,k))*(qeso_cup(i,k)/qeso_cup(i,klcl(i)))**1.25
                else
-                     entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh)
+                     entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh2d(i,k))
                endif
                cd(i,k)=0.75e-4*(1.6-frh)
                entr_rate_2d(i,k) = max(entr_rate_2d(i,k),min_entr_rate)
@@ -8027,9 +8053,8 @@ contains
          else
             !-- for shallow 
             do k=kts,ktf
-               frh = min(qo_cup(i,k)/qeso_cup(i,k),1.)
-               entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh)*max(min(1.,(qeso_cup(i,max(k,klcl(i)))&
-                                                                   /qeso_cup(i,klcl(i)))**1) ,0.1)
+               entr_rate_2d(i,k)=entr_rate(i)*(1.3-frh2d(i,k))*max(min(1.,(qeso_cup(i,max(k,klcl(i)))&
+                                                                          /qeso_cup(i,klcl(i)))**1) ,0.1)
                cd(i,k)=0.75*entr_rate_2d(i,k)!+0.5e-3
             enddo
          endif
@@ -9755,6 +9780,7 @@ contains
                           ,1.0e-3 & !shallow
                           ,5.0e-4 & !mid
                          /)
+      use_pass_cloudvol = 0                         
       use_tracer_transp = 1 
       use_tracer_scaven = 2 
       use_tracer_evap   = 1 
@@ -10888,8 +10914,8 @@ contains
          ,VAR3d_cGF& ! dummy 3-d var for output
          ,VAR3d_dGF& ! dummy 3-d var for output
          ,qexcp    & ! placeholder for Q   ex from cold pool param
-         ,hexcp      ! placeholder for MSE ex from cold pool param
-
+         ,hexcp    & ! placeholder for MSE ex from cold pool param
+         ,cnvcf      ! placeholder
 
       real,  dimension(nmp, mzp , mxp, myp ) ::     &
           mp_ice   &
@@ -11264,6 +11290,7 @@ contains
          ,curr_rvap   &
          !--- atmos composition state
          ,TRACER      & !- note: uses GEOS-5 data structure
+         ,cnvcf       & ! conv cloud fraction
          !---- forcings---
          ,buoy_exc    &
          ,gsf_t       &
