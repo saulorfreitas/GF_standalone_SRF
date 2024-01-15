@@ -1399,7 +1399,7 @@ contains
       implicit none
 
       !-local settings
-      logical, parameter:: USE_INV_LAYERS=.true.
+      logical, parameter:: USE_INV_LAYERS=.true. 
 
       character*(*),intent(in) :: cumulus
       integer      ,intent(in) :: itf,ktf,its,ite,kts,kte,ichoice,use_excess,mtp, nmp
@@ -7987,7 +7987,9 @@ contains
          frh2d(:,i) = min(qo_cup(:,i)/qeso_cup(:,i),1.)
       enddo
       
-      if(cumulus /= 'shallow' .and. use_pass_cloudvol == 1) then
+!orig if(cumulus /= 'shallow' .and. use_pass_cloudvol == 1) then
+      if(use_pass_cloudvol == 1) then
+
          !-- The Role of Passive Cloud Volumes in the Transition 
          !-- From Shallow to Deep Atmospheric Convection - GRL 2023
          do vtp_index = get_num_elements(vec_ok),1,-1
@@ -7996,7 +7998,7 @@ contains
                frh2d(:,i) = (1. - cnvcf(:,i)) * frh2d(:,i) + cnvcf(:,i)*1.0 
          enddo
       endif
-      !
+            !
       !do i=its,itf
       !   if(ierr(i) /= 0) cycle
       do vtp_index = get_num_elements(vec_ok),1,-1
@@ -8007,10 +8009,10 @@ contains
             do k=kts,ktf
                
                if(k >= klcl(i)) then
-                    !entr_rate_2d(k,i)=entr_rate(i)*(1.3-frh2d(k,i))*(qeso_cup(k,i)/qeso_cup(i,klcl(i)))**3
-                     entr_rate_2d(k,i)=entr_rate(i)*(1.3-frh2d(k,i))*(qeso_cup(k,i)/qeso_cup(klcl(i),i))**1.25
+                    !entr_rate_2d(k,i)=entr_rate(i)*(crh1-frh2d(k,i))*(qeso_cup(k,i)/qeso_cup(i,klcl(i)))**3
+                     entr_rate_2d(k,i)=entr_rate(i)*(crh1-frh2d(k,i))*(qeso_cup(k,i)/qeso_cup(klcl(i),i))**1.25
                else
-                     entr_rate_2d(k,i)=entr_rate(i)*(1.3-frh2d(k,i))
+                     entr_rate_2d(k,i)=entr_rate(i)*(crh1-frh2d(k,i))
                endif
                cd(k,i)=0.75e-4*(1.6-frh2d(k,i))
                entr_rate_2d(k,i) = max(entr_rate_2d(k,i),min_entr_rate)
@@ -8019,7 +8021,7 @@ contains
          else
             !-- for shallow 
             do k=kts,ktf
-               entr_rate_2d(k,i)=entr_rate(i)*(1.3-frh2d(k,i))*max(min(1.,(qeso_cup(max(k,klcl(i)),i)&
+               entr_rate_2d(k,i)=entr_rate(i)*(crh1-frh2d(k,i))*max(min(1.,(qeso_cup(max(k,klcl(i)),i)&
                                                                           /qeso_cup(klcl(i),i))**1) ,0.1)
                cd(k,i)=0.75*entr_rate_2d(k,i)!+0.5e-3
             enddo
