@@ -767,8 +767,8 @@ contains
 
             !--- only for GATE soundingg
             if(trim(RUNDATA) == "GATE.dat") then
-                jlx= jl
-               !jlx= 30 ! to run with only one soundings
+               !jlx= jl
+                jlx= 43 ! to run with only one soundings
                !buoy_exc2d(:,:) = float(jl)*30.
                !print*,"GATE",jl,jlx,buoy_exc2d(1,1)
                !jlx= 42 ! to run with only one soundings

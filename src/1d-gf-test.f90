@@ -7,12 +7,13 @@ program GF_1d_driver
   use modConstants, only : c_cp, c_alvl
    implicit none
 
-   integer,parameter :: mxp=1   ,myp=1, mtp =1 , nmp = 1 , mynum=1
+   integer,parameter :: mxp=1    ,myp=1,  mtp =1 , nmp = 1 , mynum=1
+  !integer,parameter :: mxp=10   ,myp=10, mtp =1 , nmp = 1 , mynum=1
    integer,parameter :: mgmxp=mxp,mgmyp=myp
    integer,parameter :: maxiens    = 3 !cloud spectral size
    integer,parameter :: &
-     ims=1   ,ime=1 ,jms=1  ,jme=1  ,kms=1 &  
-    ,its=1  ,ite=1  ,jts=1  ,jte=1  ,kts=1   
+     ims=1  ,ime=mxp ,jms=1  ,jme=myp  ,kms=1 &  
+    ,its=1  ,ite=mxp ,jts=1  ,jte=myp  ,kts=1   
 
    integer :: itime1
    logical :: land
@@ -166,7 +167,7 @@ program GF_1d_driver
      	do jk=p_klev,1,-1
      	read(7,*)pgeo(jl,jk),ppres(jl,jk),ptemp(jl,jk),pq(jl,jk),pu(jl,jk),pv(jl,jk),pvervel(jl,jk), &
      		       zq1(jl,jk),zq2(jl,jk),zqr(jl,jk),zadvt(jl,jk),zadvq(jl,jk)			    
-     	print*,"GATE=",jl,jk,pgeo(jl,jk),pvervel(jl,jk)
+     	!print*,"GATE=",jl,jk,pgeo(jl,jk),pvervel(jl,jk)
      	end do
      enddo
    close(7)

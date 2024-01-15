@@ -607,9 +607,9 @@ contains
       !-- big loop over j dimension
       do j = jts,jtf
          JCOL = J
-          conprr     (:,j) = 0.0
-          lightn_dens(:,j) = 0.0
-          var2d      (:,j) = 0.0
+         conprr     (:,j) = 0.0
+         lightn_dens(:,j) = 0.0
+         var2d      (:,j) = 0.0
 
          !-- initialization
          rtgt(:,:) = 1.0
@@ -769,7 +769,7 @@ contains
             !--- only for GATE soundingg
             if(trim(RUNDATA) == "GATE.dat") then
                !jlx= jl
-                jlx= 10 ! to run with only one soundings
+                jlx= 43 ! to run with only one soundings
                !buoy_exc2d(:,:) = float(jl)*30.
                !print*,"GATE",jl,jlx,buoy_exc2d(1,1)
                !jlx= 42 ! to run with only one soundings

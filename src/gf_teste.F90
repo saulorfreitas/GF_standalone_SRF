@@ -11,7 +11,7 @@ program  gf_test
    logical :: read_GF_ConvPar_nml =.true. 
 
    real :: confrq, local_time
-   character(len=4) :: ctime
+   character(len=6) :: ctime
    real :: real_byte_size
    logical :: land
    integer :: its,ite, jts,jte, kts,kte, mynum
@@ -93,7 +93,7 @@ program  gf_test
 
    do while(ok)
       icnt = icnt+1
-      write(ctime,fmt="(I4.4)") int(local_time)
+      write(ctime,fmt="(I6.6)") int(local_time)
       inquire (file="gf_dataIn-"//ctime//".bin", exist=exists)
       if (.not. exists) then
          print *,"Não foram encontrados mais arquivos a serem processados no tempo", int(local_time)
@@ -183,7 +183,11 @@ program  gf_test
       read(l_unit) sflux_t 
       read(l_unit) qexcp   
       read(l_unit) hexcp
-      read(l_unit) cnvcf
+      !-----
+      !srf - commented out for compatibility with older version
+      !read(l_unit) cnvcf
+      cnvcf = 0.0
+      !-----
       read(l_unit) wlpool   
 
       read(l_unit) tke_pbl               
