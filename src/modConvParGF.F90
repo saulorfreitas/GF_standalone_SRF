@@ -2162,7 +2162,7 @@ contains
             do k=start_level(i) + 1,ktop(i) + 1 
               denom= (zuo(k-1,i)-.5*up_massdetro(k-1,i)+up_massentro(k-1,i)) +1.e-12
               
-              if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 ) then 
+              if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 .or. use_pass_cloudvol == 3) then 
                   xh_env_eff = (1.-cnvcf(k-1,i))*xhe(k-1,i) + cnvcf(k-1,i)*xhes(k-1,i)
                   xhc(k,i)=(xhc(k-1,i)*zuo(k-1,i)-.5*up_massdetro(k-1,i)*xhc(k-1,i)+ &
                                                      up_massentro(k-1,i)*xh_env_eff) / denom
@@ -3238,7 +3238,7 @@ contains
             !--- steady state plume equation, for what could be in cloud without condensation
             denom =  (zu(k-1,i)-.5*up_massdetr(k-1,i)+up_massentr(k-1,i)) + 1.e-12
             
-            if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 ) then 
+            if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 .or. use_pass_cloudvol == 3) then 
                q_env_eff = (1.-cnvcf(k-1,i))*q (k-1,i) + cnvcf(k-1,i)*qes(k-1,i)
 
                qc (k,i)  = (qc (k-1,i)*zu(k-1,i)-.5*up_massdetr(k-1,i)* qc(k-1,i) +   &
@@ -8197,7 +8197,7 @@ contains
            rh2d(:,i) = min(qo_cup(:,i)/qeso_cup(:,i),1.)
          enddo
       
-         if(use_pass_cloudvol == 1 .or. use_pass_cloudvol == 12) then
+         if(use_pass_cloudvol == 1 .or. use_pass_cloudvol == 12 .or. use_pass_cloudvol == 3) then
             crh1 = 1.6 ; crh2 = 1.9
             !-- The Role of Passive Cloud Volumes in the Transition 
             !-- From Shallow to Deep Atmospheric Convection - GRL 2023
@@ -8645,7 +8645,7 @@ contains
          do k=start_level(i) + 1,ktop(i) + 1 
             denom=(zu(k-1,i)-.5*up_massdetro(k-1,i)+up_massentro(k-1,i)) + 1.e-12
 
-            if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 ) then
+            if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 .or. use_pass_cloudvol == 3) then
                   h_env_eff = (1.-cnvcf(k-1,i))*heo(k-1,i) + cnvcf(k-1,i)*heso(k-1,i)
                   
                   hco(k,i)=(hco(k-1,i)*zuo(k-1,i)-.5*up_massdetro(k-1,i)*hco(k-1,i) + &
@@ -8729,7 +8729,7 @@ contains
             denom =(zuo(k-1,i)-.5*up_massdetro(k-1,i)+up_massentro(k-1,i)) + 1.e-12
             denomU=(zuo(k-1,i)-.5*up_massdetru(k-1,i)+up_massentru(k-1,i)) + 1.e-12
            
-            if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 ) then
+            if(use_pass_cloudvol == 2 .or. use_pass_cloudvol == 12 .or. use_pass_cloudvol == 3) then
                h_env_eff = (1.-cnvcf(k-1,i))*he(k-1,i) + cnvcf(k-1,i)*hes(k-1,i)
 
                hc (k,i)=(hc (k-1,i)*zuo(k-1,i)-.5*up_massdetro(k-1,i)*hc (k-1,i) + &
