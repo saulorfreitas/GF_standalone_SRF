@@ -1147,7 +1147,6 @@ contains
                         ,var3d_bgf_2d                     &
                         ,Tpert_2d                         &
                         )
-
          enddo !- plume
 
          !--- reset ierr4d to value different of zero in case the correspondent
@@ -1834,7 +1833,7 @@ contains
       !
       call get_buoyancy(itf,ktf, its,ite, kts,kte,ierr,klcl,kbcon,ktop,hco,heo_cup,heso_cup,dbyo,zo_cup)
 
-      if(first_guess_w .or. autoconv == 4 .or. autoconv == 3) then
+      if(first_guess_w .or. autoconv == 4 .or. autoconv == 3 .or. use_pass_cloudvol == 3) then
          call cup_up_moisture_light(cumulus,start_level,klcl,ierr,ierrc,zo_cup,qco,qrco,pwo,pwavo,hco,tempco,xland   &
                                    ,po,p_cup,kbcon,ktop,cd,dbyo,clw_all,t_cup,qo,gammao_cup,zuo          &
                                    ,qeso_cup,k22,qo_cup,zqexec,use_excess,rho,up_massentro,up_massdetro    &
@@ -2270,6 +2269,21 @@ contains
                               ,zo,zo_cup,t_cup,t,tempco,qrco,po_cup,rho,prec_flx,lightn_dens)
       endif
       !
+      !--- outputs the cloud fraction source for the passive cloud volume parameterization
+      if(use_pass_cloudvol == 3) then
+         do vtp_index = get_num_elements(vec_ok),1,-1
+               i = get_data_value(vec_ok,vtp_index)
+
+               !--- estimation of the fractional area of updraft that will remains 
+               !--- in the ambient
+               do k=kbcon(i),ktop(i)
+                  !--- units 1/sec
+                  clfrac(k,i) = ((xmb(i)/sig(i))*zuo(k,i)/(rho(k,i)*vvel2d(k,i)))/dtime
+               enddo
+         enddo
+         !print*,'clfrac',trim(cumulus),maxval(clfrac),minval(clfrac)
+      endif
+
       !
       !--- convert mass fluxes, etc...
       !

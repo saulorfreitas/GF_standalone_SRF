@@ -40,7 +40,7 @@ echo $comando; eval $comando
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "closW_on_KI",  
+  runname   = "closW_on_KI2",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
