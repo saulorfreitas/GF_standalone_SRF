@@ -29,7 +29,11 @@
   mx_buoy2          = 20004.0, ! J/kg
   use_memory        = 22,
   use_gustiness     = 0,
-
+!-------------
+  use_pass_cloudvol = 0,
+  use_lcl_ctrl_entr = 0,
+  use_rhu_ctrl_entr = 0,
+ !-------------
   sgs_w_timescale  = 1,     != 0/1: uses vertical velocity for determination of tau_ecmwf
   tau_deep         = 3600., != timescales for instability removal, only for sgs_w_timescale = 0
   tau_mid          = 1200., 
@@ -46,8 +50,8 @@
 !---
 !--- controls rainfall evaporation
   use_rebcb            = 1, != 0/1: turn ON/OFF rainfall evap below cloud base
-  cum_MAX_EDT_LAND     = 0.9, 0.0, 0.2,   !-(deep ,shallow ,congestus)
-  cum_MAX_EDT_OCEAN    = 0.9, 0.0, 0.2,
+  cum_MAX_EDT_LAND     = 0.5, 0.0, 0.2,   !-(deep ,shallow ,congestus)
+  cum_MAX_EDT_OCEAN    = 0.5, 0.0, 0.2,
 !----
 
 !---- boundary condition specification

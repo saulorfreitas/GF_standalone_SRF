@@ -1833,7 +1833,7 @@ contains
       !
       call get_buoyancy(itf,ktf, its,ite, kts,kte,ierr,klcl,kbcon,ktop,hco,heo_cup,heso_cup,dbyo,zo_cup)
 
-      if(first_guess_w .or. autoconv == 4 .or. autoconv == 3 .or. use_pass_cloudvol == 3) then
+      if(first_guess_w .or. autoconv == 4 .or. autoconv == 3) then
          call cup_up_moisture_light(cumulus,start_level,klcl,ierr,ierrc,zo_cup,qco,qrco,pwo,pwavo,hco,tempco,xland   &
                                    ,po,p_cup,kbcon,ktop,cd,dbyo,clw_all,t_cup,qo,gammao_cup,zuo          &
                                    ,qeso_cup,k22,qo_cup,zqexec,use_excess,rho,up_massentro,up_massdetro    &
@@ -1923,7 +1923,7 @@ contains
       !
       !--- vertical velocity
       !
-      if(.not. FIRST_GUESS_W) then
+      if(.not. FIRST_GUESS_W .or. use_pass_cloudvol == 3) then
            call cup_up_vvel(vvel2d,vvel1d,zws,entr_rate_2d,cd,zo,zo_cup,zuo,dbyo,GAMMAo_CUP,tn_cup      &
                            ,tempco,qco,qrco,qo,start_level,klcl,kbcon,ktop,ierr,itf,ktf,its,ite, kts,kte&
                            ,wlpool,wlpool_bcon)
@@ -2278,7 +2278,7 @@ contains
                !--- in the ambient
                do k=kbcon(i),ktop(i)
                   !--- units 1/sec
-                  clfrac(k,i) = ((xmb(i)/sig(i))*zuo(k,i)/(rho(k,i)*vvel2d(k,i)))/dtime
+                  clfrac(k,i) = ((xmb(i)/sig(i))*zuo(k,i)/(rho(k,i)*max(2.,vvel2d(k,i))))/dtime
                enddo
          enddo
          !print*,'clfrac',trim(cumulus),maxval(clfrac),minval(clfrac)
