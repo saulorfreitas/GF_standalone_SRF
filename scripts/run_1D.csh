@@ -60,7 +60,7 @@ cat << Eof0 > ${DATAIN}/GF_ConvPar_nml
   
   closure_choice   = 10 ,10,3, != closure for the mass flux at the cloud base
   
-  cum_entr_rate    = 6.3e-4, 1.e-3, 5.e-4, != initial gross entrainment rate for 
+  cum_entr_rate    = 6.3e-5, 1.e-3, 5.e-4, != initial gross entrainment rate for 
                                            != deep, shallow, congestus
   
   dicycle          = 0,            != 0/1:  diurnal cycle closure, default = 1
