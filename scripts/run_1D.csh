@@ -38,7 +38,7 @@ echo $comando; eval $comando
 cat << Eof1 > ${DATAIN}/gf.inp
 
  &run
-  runname   = "REF${1}",  
+  runname   = "REF_KI_${1}",  
   runlabel  = "ref",  
   version   =  4,  ! v=1 GATE , VERSION =4 GEOS5
   KLEV_SOUND = 91,
