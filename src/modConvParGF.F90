@@ -1730,7 +1730,13 @@ contains
          call LCL_and_PBL_ctrl_on_entrainment(cumulus,its,ite,itf,kts,kte,ktf,min_entr_rate &
                                              ,entr_rate,zlcl_sfc,turb_len_scale,AA0_,AA1_,AA1_BL_)
       endif
-      ! 
+      !
+      !--- determine the entrainment dependent on environmental moist (here relative humidity)
+      !--- also the controls of RH on the diurnal cycle (see Tian et al 2022 GRL)
+      if(cumulus == 'deep') &
+          call rh_controls(whoami_all,itf,ktf,its,ite,kts,kte,ierr,tn,po,qo,qeso,po_cup,cumulus,rh_entr_factor, &
+                           rh_dicycle_fct,entr_rate_input, entr_rate ,xlons,dtime)         
+      !
       !-- cold pool parameterization and convective memory
       !
       if (convection_tracer == 1 .and. trim(cumulus) == 'deep') then
@@ -1761,12 +1767,6 @@ contains
          !print*,"LCL",maxval(klcl),minval(klcl),maxval(kpbl),minval(kpbl)
       endif 
       !
-      !--- determine the entrainment dependent on environmental moist (here relative humidity)
-      !--- also the controls of RH on the diurnal cycle (see Tian et al 2022 GRL)
-      !
-      if(cumulus == 'deep') &
-          call rh_controls(itf,ktf,its,ite,kts,kte,ierr,tn,po,qo,qeso,po_cup,cumulus,rh_entr_factor, &
-                           rh_dicycle_fct,entr_rate_input, entr_rate ,xlons,dtime)         
       !
       !
       !--- determine the vertical entrainment/detrainment rates, the level of convective cloud base -kbcon-
@@ -1888,7 +1888,7 @@ contains
       ! enddo
       !---
       !
-      if(.not. FIRST_GUESS_W) then
+      if(.not. FIRST_GUESS_W .or. use_pass_cloudvol == 3) then
          !--- calculate in-cloud/updraft air temperature for vertical velocity
          !
          tempco (:,:) = tn_cup(:,:)
@@ -7198,12 +7198,12 @@ contains
       return
    end function make_RainNumber
    !----------------------------------------------------------------------
-   subroutine rh_controls(itf,ktf,its,ite,kts,kte,ierr,t,po,qo,qeso,po_cup,cumulus  &
+   subroutine rh_controls(mynum,itf,ktf,its,ite,kts,kte,ierr,t,po,qo,qeso,po_cup,cumulus  &
                        ,rh_entr_factor,rh_dicycle_fct,entr_rate_input, entr_rate,xlons,dt)
            
       implicit none
       character *(*), intent (in)             :: cumulus
-      integer  ,intent (in )                  :: itf,ktf, its,ite, kts,kte
+      integer  ,intent (in )                  :: mynum,itf,ktf, its,ite, kts,kte
       integer  ,intent (in )  ,dimension(:)   :: ierr
       real     ,intent (in )                  :: entr_rate_input,dt
       real     ,intent (in )  ,dimension(:)   :: xlons
@@ -7219,9 +7219,8 @@ contains
       real    ,parameter :: ref_local_time = 8., ftun3=0.25
       logical ,parameter :: free_troposphere = .true. 
       
-      if(moist_trigger /= 2 .and. rh_dicycle == 0)return  
-      !
-      !
+   if(moist_trigger > 1) then 
+      
       !-- ave rh from 1000 -> 450 hPa, following Tian et al 2022 GRL.
       ! OR
       !-- ave rh from 800 -> 450 hPa accounts only for the ´free troposphere'
@@ -7229,9 +7228,9 @@ contains
 
       do vtp_index = get_num_elements(vec_ok),1,-1
          i = get_data_value(vec_ok,vtp_index)
+         
          frh(i) = 0.
          trash  = 0.
-  
          loopN:    do k=kts,ktf
             if( po(k,i) .gt. p_start .and. po(k,i) .lt. 450.) cycle loopN
             dpg=100.*(po_cup(k,i)-po_cup(k+1,i))/c_grav
@@ -7244,40 +7243,34 @@ contains
          frh(i) = max(1., min(100., frh(i)))
          !
          !--- this is for the moist_trigger = 2
-          x = dble(frh(i))          
-          y = 9.192833D0 - 0.2529055D0*x + 0.002344832d0*x**2 &
-            - 0.000007230408D0*x**3
-          rh_entr_factor(i) = real(y,4)
-      
-          
-          !--- local time
-          dayhr  = (time_in / 3600. + float(itime1_in/100) &
-                 + float(mod(itime1_in,100)) / 60.) 
-          dayhrr(i) = mod(dayhr+xlons(i)/15.+24., 24.)
-          
-           !print*,"FRH=",i,frh(i),rh_dicycle_fct(i),dayhrr,time_in/3600.,xlons(i)
-           !print*,"LONS=",i,dayhrr,time_in/3600.,xlons(i)
-           !print*,"=================================================="
-      enddo
-      if(moist_trigger == 2) then 
-            entr_rate(:) = entr_rate_input *rh_entr_factor(:)
-            !print*,"rh-entr-fac",minval(rh_entr_factor),maxval(rh_entr_factor)
-      endif
+         x = dble(frh(i))          
+         y = 9.192833D0 - 0.2529055D0*x + 0.002344832d0*x**2 &
+           - 0.000007230408D0*x**3
+         
+         !--- if RH increases, rh_entr_factor decreases => entr decreases
+         if(moist_trigger == 2) rh_entr_factor(i) = max(0.5,min(1.0,real(y,4)))
+         
+         !--- if RH increases, rh_entr_factor increases => entr increases
+         if(moist_trigger == 3) rh_entr_factor(i) = max(0.1,min(1.0,frh(i)*0.01))
 
-      if(rh_dicycle == 1) then 
-       do vtp_index = get_num_elements(vec_ok),1,-1
+         entr_rate(i) = entr_rate(i) * rh_entr_factor(i)    
+      enddo
+   endif  
+   if(rh_dicycle == 1) then 
+      do vtp_index = get_num_elements(vec_ok),1,-1
          i = get_data_value(vec_ok,vtp_index)
+          !--- local time
+          dayhr  = (time_in / 3600. + float(itime1_in/100)+float(mod(itime1_in,100))/60.) 
+          dayhrr(i) = mod(dayhr+xlons(i)/15.+24., 24.)
+
          if(abs ( dayhrr(i) - ref_local_time) < 1. .or. time_in < dt+1. ) &  
            !--- ftun3 controls the domain of the dicycle closure 
            !    ftun3 => 1 the closure is insensitive to the mean tropospheric RH
            !    ftun3 => 0 it depends on the RH, with mininum = ftun3
-           !rh_dicycle_fct(i) = ftun3 +(1. - ftun3)*&
-           !                 (1.-(atan((frh(i)-60.)/10.)+atan(50.))/3.1016)/0.9523154
            rh_dicycle_fct(i) = ftun3 +(1. - ftun3)*&
                             (1.-(atan((frh(i)-55.)/10.)+atan(55.))/3.1016)
-           !print*,"fac=",xlons(i),frh(i), rh_dicycle_fct(i);call flush(6)
-       enddo
-      endif
+      enddo
+   endif
       !-- code to test the atan function
       !  do i = 1 ,100 !relative humidity
       !      y = 0.25 +0.75*(1.-(atan((float(i)-60.)/10.)+atan(50.))/3.1016)/0.9523154
@@ -13039,5 +13032,6 @@ contains
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
   !---------------------------------------------------------------------------------------------------
 end  module modConvParGF
+
 
 
