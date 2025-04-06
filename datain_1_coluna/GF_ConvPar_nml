@@ -1,6 +1,6 @@
 &GF_NML  
 
-  icumulus_gf      = 1,1,1, != trimodal plume (deep ,shallow ,congestus)
+  icumulus_gf      = 1,0,0, != trimodal plume (deep ,shallow ,congestus)
   
   closure_choice   = 10 ,10,3, != closure for the mass flux at the cloud base
   
@@ -75,13 +75,13 @@
 !----
 
 !---- the 'cloud microphysics'
-   autoconv        = 4,
-   qrc_crit        = 6.0e-4,
+   autoconv        = 1,
+   qrc_crit        = 1.0e-4,
 
    c0_deep         = 1.0e-3,
-   c0_shal         = 0.0e-3,
+   c0_shal         = 2.0e-3,
    c0_mid          = 1.5e-3, 
-   n_cldrop        = 50.,
+   n_cldrop        = 10.,
 
 !   c0_deep    = 2.e-3,
 !   c0_mid     = 2.e-3, 

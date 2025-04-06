@@ -5726,8 +5726,8 @@ contains
       real,    dimension(its:ite) :: tot_evap_bcb,eff_c_conv
 
       if(cumulus == 'shallow') then
-         RH_cr_OCEAN   = 1.
-         RH_cr_LAND    = 1.
+         RH_cr_OCEAN   = 0.95
+         RH_cr_LAND    = 0.95
          eff_c_conv(:) = min(0.2,max(xmb(:),c_conv))
       else
          RH_cr_OCEAN   = 0.99 !test 0.90
@@ -9314,8 +9314,12 @@ contains
                   dellah(k,i) =-( zuo(k+1,i)*hco (k+1,i) - zuo(k,i)*hco (k,i) )*c_grav/dp      &
                                +( zdo(k+1,i)*hcdo(k+1,i) - zdo(k,i)*hcdo(k,i) )*c_grav/dp*edto(i)
 
-                  dellah(k,i) = dellah(k,i) + c_xlf*((1.-p_liq_ice(k,i))* &
-                              0.5*(qrco(k+1,i)+qrco(k,i)) - melting(k,i))*c_grav/dp
+               !dellah(k,i) = dellah(k,i) + c_xlf*((1.-p_liq_ice(k,i))* &
+               !               0.5*(qrco(k+1,i)+qrco(k,i)) - melting(k,i))*c_grav/dp
+
+                  dellah(k,i) = dellah(k,i) -  c_xlf*(melting(k,i))*c_grav/dp
+
+
                   !- update with subsidence term from the FCT scheme
                   dellah(k,i) = dellah(k,i) + sub_tend(k,1)
                   !--- for output only
